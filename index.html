@@ -1,8 +1,16 @@
 <!DOCTYPE html>
+<!--
+  @file index.html
+  @description Ditherator: WebGPU Dithering Viewer. Main HTML entry point that loads scripts, sets up layout, and initializes the viewer.
+  @author Aldo Adriazola
+  @copyright (c) 2025 Aldo Adriazola. All rights reserved.
+  @license Licensed under the MIT License (or specify your chosen license).
+  @version 1.0.0
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>WebGPU Viewer - Attempt 98 (With Runtime Measurement)</title>
+    <title>WebGPU Viewer - Dithering Effects</title>
     <style>
         body { 
             margin: 0; 
@@ -10,11 +18,11 @@
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            justify-content: flex-start; /* ⭐ FIX 1: Align content from the top */
-            min-height: 100vh; /* ⭐ FIX 2: Use min-height */
+            justify-content: flex-start; 
+            min-height: 100vh; 
             gap: 20px; 
             font-family: sans-serif; 
-            padding-top: 20px; /* ⭐ FIX 3: Add top padding */
+            padding-top: 20px; 
             padding-bottom: 20px;
         }
         canvas {
@@ -44,6 +52,29 @@
             font-weight: bold;
             margin-left: 20px;
             color: #333;
+        }
+                
+        /* Increase font size for all main interactive elements and spans */
+        #controls select, 
+        #controls input[type="file"],
+        #controls label,
+        #slider-controls label,
+        #slider-controls span {
+            font-size: 16px; 
+        }
+        
+        /* Ensure drop-down and file chooser are easy to tap */
+        #controls select,
+        #controls input[type="file"] {
+            padding: 6px 10px; /* Add internal spacing */
+            height: 36px; /* Ensure a minimum tap height */
+            box-sizing: border-box;
+        }
+
+        /* Target the range slider thumb and track for better touchability */
+        #slider-controls input[type="range"] {
+            width: 150px; /* Ensure slider itself has enough width on desktop */
+            height: 30px; /* Increase vertical space for easier touch drag */
         }
     </style>
 </head>
