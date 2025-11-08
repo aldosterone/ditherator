@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebGPU Viewer - Attempt 98 (With Runtime Measurement)</title>
+    <style>
+        body { 
+            margin: 0; 
+            background-color: #ffffff; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: flex-start; /* ⭐ FIX 1: Align content from the top */
+            min-height: 100vh; /* ⭐ FIX 2: Use min-height */
+            gap: 20px; 
+            font-family: sans-serif; 
+            padding-top: 20px; /* ⭐ FIX 3: Add top padding */
+            padding-bottom: 20px;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            /* FIX: Set responsive width and rely on JS for aspect-ratio */
+            width: 80vw; /* Use up to 80% of viewport width */
+            height: auto; /* Allow height to adjust automatically */
+            max-height: 90vh; /* Set a larger max-height to avoid early vertical clamping */
+            background-color: #ffffff;
+        }
+        #controls, #slider-controls {
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+        /* Hide slider groups by default */
+        .slider-group {
+            display: none;
+        }
+        #color-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        #runtime-display { 
+            font-weight: bold;
+            margin-left: 20px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <label for="effect-selector">Effect:</label>
+        <select id="effect-selector">
+            <option value="original" selected>Original (Color)</option>
+            <option value="grayscale">Grayscale (8-bit)</option>
+            <option value="threshold">1-Bit (Simple Threshold)</option>
+            <option value="bayer">Bayer Dithering (1-bit)</option>
+            <option value="blueNoise">Blue Noise Dithering (1-bit)</option>
+            <option value="floydSteinberg">Floyd-Steinberg (1-bit)</option>
+            <option value="atkinson">Atkinson Dithering (1-bit)</option>
+        </select>
+        
+        <input type="file" id="image-loader" accept="image/*" style="margin-left: 20px;">
+        
+        <span id="color-controls">
+            <input type="checkbox" id="perceptual-mode" checked>
+            <label for="perceptual-mode">Perceptual Output (sRGB)</label>
+        </span>
+        
+        <span id="runtime-display">Runtime: N/A</span> </div>
+    
+    <div id="slider-controls" style="display: none;">
+        <div id="bias-slider-group" class="slider-group">
+            <label for="bias-slider">Noise Bias:</label>
+            <input type="range" id="bias-slider" min="-0.5" max="0.5" step="0.01" value="0.30">
+            <span id="bias-value">0.30</span>
+        </div>
+        <div id="threshold-slider-group" class="slider-group">
+            <label for="threshold-slider">Quantization Threshold:</label>
+            <input type="range" id="threshold-slider" min="0.0" max="1.0" step="0.01" value="0.5">
+            <span id="threshold-value">0.50</span>
+        </div>
+    </div>
+
+    <canvas width="1280" height="960"></canvas>
+    <script src="viewer.js"></script>
+</body>
+</html>
