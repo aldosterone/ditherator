@@ -5,11 +5,12 @@
   @author Aldo Adriazola
   @copyright (c) 2025 Aldo Adriazola. All rights reserved.
   @license Licensed under the MIT License (or specify your chosen license).
-  @version 1.0.0
+  @version 1.1.0
 -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WebGPU Viewer - Dithering Effects</title>
     <style>
         body { 
@@ -27,19 +28,29 @@
         }
         canvas {
             border: 1px solid #ccc;
-            /* FIX: Set responsive width and rely on JS for aspect-ratio */
-            width: 80vw; /* Use up to 80% of viewport width */
-            height: auto; /* Allow height to adjust automatically */
-            max-height: 90vh; /* Set a larger max-height to avoid early vertical clamping */
+            /* Remove fixed width - let JS handle sizing */
+            max-width: 90vw;
+            max-height: 90vh;
+            width: auto;
+            height: auto;
             background-color: #ffffff;
+            cursor: crosshair;
+            /* Critical: prevent CSS from distorting canvas */
+            object-fit: contain;
+        }
+        canvas.compare-mode {
+            cursor: ew-resize;
         }
         #controls, #slider-controls {
             padding: 10px;
             background-color: #f0f0f0;
             border-radius: 8px;
             border: 1px solid #ccc;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 15px;
         }
-        /* Hide slider groups by default */
         .slider-group {
             display: none;
         }
@@ -50,11 +61,26 @@
         }
         #runtime-display { 
             font-weight: bold;
-            margin-left: 20px;
             color: #333;
         }
+        
+        button {
+            padding: 6px 10px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:active {
+            background-color: #004085;
+        }
                 
-        /* Increase font size for all main interactive elements and spans */
         #controls select, 
         #controls input[type="file"],
         #controls label,
@@ -63,18 +89,119 @@
             font-size: 16px; 
         }
         
-        /* Ensure drop-down and file chooser are easy to tap */
         #controls select,
         #controls input[type="file"] {
-            padding: 6px 10px; /* Add internal spacing */
-            height: 36px; /* Ensure a minimum tap height */
+            padding: 6px 10px;
+            height: 36px;
             box-sizing: border-box;
         }
 
-        /* Target the range slider thumb and track for better touchability */
         #slider-controls input[type="range"] {
-            width: 150px; /* Ensure slider itself has enough width on desktop */
-            height: 30px; /* Increase vertical space for easier touch drag */
+            width: 150px;
+            height: 30px;
+        }
+        
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        label {
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .help-text {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+            max-width: 80vw;
+        }
+
+        /* Mobile-first improvements */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                gap: 10px;
+            }
+            
+            canvas {
+                max-width: 95vw !important;
+                max-height: 70vh !important;
+            }
+            
+            #controls {
+                flex-direction: column;
+                width: 95vw;
+                padding: 15px;
+                align-items: stretch;
+            }
+            
+            #controls > * {
+                margin: 5px 0;
+            }
+            
+            #controls select,
+            #controls input[type="file"],
+            #controls label,
+            button {
+                font-size: 18px;
+                width: 100%;
+            }
+            
+            #controls select,
+            #controls input[type="file"],
+            button {
+                height: 44px;
+                padding: 10px;
+            }
+            
+            #color-controls {
+                flex-direction: row;
+                align-items: center;
+                gap: 10px;
+                width: 100%;
+                margin-top: 10px;
+            }
+            
+            #runtime-display {
+                margin-left: 0;
+                margin-top: 10px;
+                display: block;
+                width: 100%;
+            }
+            
+            #slider-controls {
+                width: 95vw;
+                padding: 15px;
+            }
+            
+            .slider-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            #slider-controls input[type="range"] {
+                width: 100%;
+                height: 40px;
+            }
+            
+            #slider-controls label,
+            #slider-controls span {
+                font-size: 18px;
+            }
+            
+            input[type="checkbox"] {
+                width: 24px;
+                height: 24px;
+            }
+            
+            .help-text {
+                max-width: 95vw;
+                font-size: 11px;
+            }
         }
     </style>
 </head>
@@ -91,14 +218,17 @@
             <option value="atkinson">Atkinson Dithering (1-bit)</option>
         </select>
         
-        <input type="file" id="image-loader" accept="image/*" style="margin-left: 20px;">
+        <input type="file" id="image-loader" accept="image/*">
+        
+        <button id="save-button">Save Image</button>
         
         <span id="color-controls">
             <input type="checkbox" id="perceptual-mode" checked>
             <label for="perceptual-mode">Perceptual Output (sRGB)</label>
         </span>
         
-        <span id="runtime-display">Runtime: N/A</span> </div>
+        <span id="runtime-display">Runtime: N/A</span>
+    </div>
     
     <div id="slider-controls" style="display: none;">
         <div id="bias-slider-group" class="slider-group">
@@ -114,6 +244,11 @@
     </div>
 
     <canvas width="1280" height="960"></canvas>
+    
+    <div class="help-text">
+        Keyboard shortcuts: 0-6 (switch effects), P (toggle perceptual), S (save image)
+    </div>
+    
     <script src="viewer.js"></script>
 </body>
 </html>
