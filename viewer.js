@@ -1,4 +1,12 @@
-// viewer.js - Attempt #115 (Clean CPU Migration for Bayer Dithering)
+/**
+ * @file viewer.js
+ * @description Ditherator: WebGPU Dithering Viewer Core Logic. Handles image loading, effect dispatch (CPU/GPU),
+ * and WebGPU pipeline setup.
+ * @author Aldo Adriazola
+ * @copyright (c) 2025 Aldo Adriazola. All rights reserved.
+ * @license Licensed under the MIT License (or specify your chosen license).
+ * @version 1.1.0 - Improved with error handling, save feature, and keyboard shortcuts
+ */
 "use strict";
 
 const blueNoiseWidth = 64;
@@ -9,11 +17,8 @@ let currentImageBitmap = null;
 
 // --- GLOBAL UTILITY FUNCTIONS ---
 
-// Function to linearly convert sRGB (gamma) to Linear (c*c approximation)
 function linearize(c) { return c * c; }
-// Function to linearly convert Linear to sRGB (sqrt(c) approximation)
 function unlinearize_approx(c) { return Math.sqrt(c); }
-// Grayscale conversion function (Linear space)
 function toLinearGrayscale(r, g, b) {
     const linR = linearize(r);
     const linG = linearize(g);
@@ -22,12 +27,11 @@ function toLinearGrayscale(r, g, b) {
 }
 
 /**
- * 🎨 Bayer Dithering (MIGRATED CPU Implementation)
+ * 🎨 Bayer Dithering (CPU Implementation)
  */
 function bayerDither(inputData, width, height, threshold, isPerceptual) {
     const outputData = new Uint8Array(width * height * 4);
     
-    // 8x8 Bayer Matrix (Normalized values in 0-63)
     const bayer = [
       [0, 32, 8, 40, 2, 34, 10, 42], [48, 16, 56, 24, 50, 18, 58, 26],
       [12, 44, 4, 36, 14, 46, 6, 38], [60, 28, 52, 20, 62, 30, 54, 22],
@@ -65,7 +69,6 @@ function bayerDither(inputData, width, height, threshold, isPerceptual) {
     return outputData;
 }
 
-
 /**
  * 🎨 Floyd-Steinberg Dithering (CPU Implementation)
  */
@@ -74,7 +77,6 @@ function floydSteinbergDither(inputData, width, height, threshold, isPerceptual)
     const pixelGrayscale = new Float32Array(width * height);
     const thresholdBias = threshold - 0.5;
 
-    // 1. Convert Input RGBA (sRGB) to Linear Grayscale (and store the linear value)
     for (let i = 0; i < width * height; i++) {
         const i4 = i * 4;
         const r = inputData[i4 + 0] / 255.0;
@@ -83,7 +85,6 @@ function floydSteinbergDither(inputData, width, height, threshold, isPerceptual)
         pixelGrayscale[i] = toLinearGrayscale(r, g, b);
     }
     
-    // 2. Error Diffusion Pass
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             const i = y * width + x;
@@ -99,19 +100,16 @@ function floydSteinbergDither(inputData, width, height, threshold, isPerceptual)
             
             const error = oldGrayLinear - quantizedValue;
 
-            // d. Distribute Error (Floyd-Steinberg coefficients)
-            
-            if (x + 1 < width) { // To the right (7/16)
+            if (x + 1 < width) {
                 pixelGrayscale[i + 1] += error * (7 / 16);
             }
             if (y + 1 < height) {
-                if (x > 0) { // To the bottom-left (3/16)
+                if (x > 0) {
                     pixelGrayscale[i + width - 1] += error * (3 / 16);
                 }
-                // To the bottom (5/16)
                 pixelGrayscale[i + width] += error * (5 / 16);
                 
-                if (x + 1 < width) { // To the bottom-right (1/16)
+                if (x + 1 < width) {
                     pixelGrayscale[i + width + 1] += error * (1 / 16);
                 }
             }
@@ -126,7 +124,6 @@ function floydSteinbergDither(inputData, width, height, threshold, isPerceptual)
     return outputData;
 }
 
-
 /**
  * 🎨 Atkinson Dithering (CPU Implementation)
  */
@@ -135,7 +132,6 @@ function atkinsonDither(inputData, width, height, threshold, isPerceptual) {
     const pixelGrayscale = new Float32Array(width * height);
     const thresholdBias = threshold - 0.5;
 
-    // 1. Convert Input RGBA (sRGB) to Linear Grayscale
     for (let i = 0; i < width * height; i++) {
         const i4 = i * 4;
         const r = inputData[i4 + 0] / 255.0;
@@ -144,7 +140,6 @@ function atkinsonDither(inputData, width, height, threshold, isPerceptual) {
         pixelGrayscale[i] = toLinearGrayscale(r, g, b);
     }
     
-    // 2. Error Diffusion Pass
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             const i = y * width + x;
@@ -159,32 +154,27 @@ function atkinsonDither(inputData, width, height, threshold, isPerceptual) {
             const quantizedValue = (oldGrayCompare + thresholdBias > 0.5) ? 1.0 : 0.0;
             
             const error = oldGrayLinear - quantizedValue;
-
-            // CRITICAL DIFFERENCE: Only distribute 1/8 to each of 6 neighbors (total 6/8 diffused)
             const errorFraction = error * (1 / 8); 
 
-            // d. Distribute Error (Atkinson coefficients: 1/8 to 6 neighbors)
-            
-            if (x + 1 < width) { // To the right
+            if (x + 1 < width) {
                 pixelGrayscale[i + 1] += errorFraction;
             }
-            if (x + 2 < width) { // Two steps right
+            if (x + 2 < width) {
                 pixelGrayscale[i + 2] += errorFraction;
             }
             
             if (y + 1 < height) {
-                if (x - 1 >= 0) { // Bottom-left
+                if (x - 1 >= 0) {
                     pixelGrayscale[i + width - 1] += errorFraction;
                 }
-                // To the bottom
                 pixelGrayscale[i + width] += errorFraction;
                 
-                if (x + 1 < width) { // Bottom-right
+                if (x + 1 < width) {
                     pixelGrayscale[i + width + 1] += errorFraction;
                 }
             }
             
-            if (y + 2 < height) { // Two steps down
+            if (y + 2 < height) {
                 pixelGrayscale[i + width * 2] += errorFraction;
             }
 
@@ -198,10 +188,8 @@ function atkinsonDither(inputData, width, height, threshold, isPerceptual) {
     return outputData;
 }
 
-
 /**
- * CPU Readback Function: Reads data from a global ImageBitmap via a 2D canvas.
- * @returns {Uint8ClampedArray} - RGBA data (0-255).
+ * CPU Readback Function
  */
 function readImageBitmapToUint8Array(imageBitmap) {
     if (!imageBitmap) return null;
@@ -218,7 +206,6 @@ function readImageBitmapToUint8Array(imageBitmap) {
     
     return imageData.data; 
 }
-
 
 // --- ASYNC DATA FETCH UTILITIES ---
 async function loadBlueNoiseTextureFromFile(device, url) {
@@ -249,22 +236,38 @@ async function loadBlueNoiseTextureFromFile(device, url) {
         return noiseTexture;
     } catch (e) {
         console.error(`Failed to load or process noise texture from ${url}:`, e);
-        alert(`Failed to load ${url}. Please ensure it exists and is accessible.`);
         return null;
     }
 }
 
 async function main() {
-    console.log("--- Starting Attempt #115 (Clean CPU Migration) ---");
+    console.log("--- Starting Improved Ditherator v1.1 ---");
+    console.log("Browser:", navigator.userAgent);
+    console.log("WebGPU available:", !!navigator.gpu);
 
-    if (!navigator.gpu) throw new Error("WebGPU is not supported.");
+    if (!navigator.gpu) {
+        alert("WebGPU is not supported in your browser. Please use a compatible browser (Chrome, Edge, etc.)");
+        throw new Error("WebGPU is not supported.");
+    }
+    
+    console.log("Requesting WebGPU adapter...");
+    
     const adapter = await navigator.gpu.requestAdapter();
-    if (!adapter) throw new Error("No adapter.");
+    if (!adapter) {
+        alert("Failed to get WebGPU adapter. Your GPU may not support WebGPU.");
+        throw new Error("No adapter.");
+    }
+    
+    console.log("Got adapter, requesting device...");
+    
     const device = await adapter.requestDevice();
+    console.log("Got device successfully");
+    
     let renderLoopId = null;
+    
     device.lost.then(info => {
         console.error("WebGPU device was lost:", info.message);
-        alert(`WebGPU device lost: ${info.message}. Reload page.`);
+        alert(`WebGPU device lost: ${info.message}. Please reload the page.`);
         if (renderLoopId) cancelAnimationFrame(renderLoopId);
     });
 
@@ -278,11 +281,11 @@ async function main() {
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST,
         alphaMode: 'premultiplied',
     });
-    console.log(`Canvas configured ONCE to fixed size ${canvas.width}x${canvas.height}`);
+    console.log(`Canvas configured to fixed size ${canvas.width}x${canvas.height}`);
 
     const blueNoiseTexture = await loadBlueNoiseTextureFromFile(device, blueNoiseFileName);
     if (!blueNoiseTexture) {
-        console.warn("Disabling blue noise option due to load failure.");
+        console.warn("Blue noise texture failed to load. Disabling blue noise option.");
         const blueNoiseOption = document.querySelector('#effect-selector option[value="blueNoise"]');
         if (blueNoiseOption) blueNoiseOption.disabled = true;
     }
@@ -304,8 +307,6 @@ async function main() {
             }
         `,
     });
-
-    // Removed: bayerDitherShaderModule definition.
 
     const blueNoiseDitherShaderModule = device.createShaderModule({
         label: "BlueNoiseDitherComputeShader",
@@ -391,7 +392,7 @@ async function main() {
 
     // --- PIPELINES ---
     
-    let grayscaleComputePipeline, thresholdComputePipeline, bayerComputePipeline;
+    let grayscaleComputePipeline, thresholdComputePipeline;
     try {
         grayscaleComputePipeline = device.createComputePipeline({
             label: "GrayscaleComputePipeline",
@@ -403,8 +404,10 @@ async function main() {
             layout: "auto",
             compute: { module: thresholdShaderModule, entryPoint: "main" },
         });
-        // Removed: bayerComputePipeline creation
-    } catch(e) { console.error("Failed to create auto-layout pipelines:", e); }
+    } catch(e) { 
+        console.error("Failed to create auto-layout pipelines:", e);
+        alert("Failed to create compute pipelines. Your GPU may not fully support WebGPU.");
+    }
 
     let blueNoiseComputePipeline;
     let blueNoiseComputeBindGroupLayout; 
@@ -416,8 +419,8 @@ async function main() {
                     { binding: 0, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: "unfilterable-float" } },
                     { binding: 1, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: "write-only", format: "rgba8unorm" } },
                     { binding: 2, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: "unfilterable-float" } },
-                    { binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } }, // bias
-                    { binding: 4, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } }  // isPerceptual
+                    { binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } },
+                    { binding: 4, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } }
                 ]
             });
             blueNoiseComputePipeline = device.createComputePipeline({
@@ -445,7 +448,7 @@ async function main() {
         minFilter: "nearest"
     });
 
-    // --- Uniform Buffers (Unchanged) ---
+    // --- Uniform Buffers ---
     const biasValueArray = new Float32Array([0.30]);
     const biasUniformBuffer = device.createBuffer({
         label: "Bias Uniform Buffer",
@@ -476,41 +479,168 @@ async function main() {
     let needsRedraw = true;
     const runtimeDisplay = document.getElementById('runtime-display'); 
 
-    // --- IMAGE LOADER (Cleaned up, no external resizing) ---
+    // --- IMAGE LOADER WITH ERROR HANDLING ---
     document.getElementById("image-loader").addEventListener("change", async (event) => {
         const file = event.target.files[0];
         if (!file) return;
         
-        const imageBitmap = await createImageBitmap(file, { imageOrientation: 'none' });
-        
-        const originalWidth = imageBitmap.width;
-        const originalHeight = imageBitmap.height;
+        try {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please select a valid image file');
+                return;
+            }
+            
+            // Validate file size (50MB limit)
+            const maxSize = 50 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert('Image file is too large. Please select an image under 50MB.');
+                return;
+            }
+            
+            const imageBitmap = await createImageBitmap(file, { imageOrientation: 'none' });
+            
+            const originalWidth = imageBitmap.width;
+            const originalHeight = imageBitmap.height;
+            
+            // Warn about very large images
+            const maxDimension = 4096;
+            if (originalWidth > maxDimension || originalHeight > maxDimension) {
+                if (!confirm(`This image is very large (${originalWidth}x${originalHeight}). Processing may be slow. Continue?`)) {
+                    return;
+                }
+            }
 
-        currentImageBitmap = imageBitmap; // Use the original bitmap
+            currentImageBitmap = imageBitmap;
+            
+            // Set canvas internal resolution to match image
+            canvas.width = originalWidth;
+            canvas.height = originalHeight;
+            
+            // Calculate display size maintaining aspect ratio
+            const maxDisplayWidth = window.innerWidth * 0.9;
+            const maxDisplayHeight = window.innerHeight * 0.9;
+            const aspectRatio = originalWidth / originalHeight;
+            
+            let displayWidth = originalWidth;
+            let displayHeight = originalHeight;
+            
+            // Scale down if needed
+            if (displayWidth > maxDisplayWidth) {
+                displayWidth = maxDisplayWidth;
+                displayHeight = displayWidth / aspectRatio;
+            }
+            if (displayHeight > maxDisplayHeight) {
+                displayHeight = maxDisplayHeight;
+                displayWidth = displayHeight * aspectRatio;
+            }
+            
+            // Set CSS display size explicitly
+            canvas.style.width = `${displayWidth}px`;
+            canvas.style.height = `${displayHeight}px`;
+            
+            if (sourceTexture) sourceTexture.destroy();
+            sourceTexture = device.createTexture({
+                size: [originalWidth, originalHeight],
+                format: "rgba8unorm", 
+                usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT, 
+            });
+            
+            device.queue.copyExternalImageToTexture(
+                { source: currentImageBitmap }, 
+                { texture: sourceTexture }, 
+                [originalWidth, originalHeight]
+            );
 
-        // ASPECT RATIO FIX: Set explicit canvas attributes to match image dimensions
-        canvas.width = originalWidth;
-        canvas.height = originalHeight;
-
-        if (sourceTexture) sourceTexture.destroy();
-        sourceTexture = device.createTexture({
-            size: [originalWidth, originalHeight],
-            format: "rgba8unorm", 
-            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT, 
-        });
-        
-        device.queue.copyExternalImageToTexture(
-            { source: currentImageBitmap }, 
-            { texture: sourceTexture }, 
-            [originalWidth, originalHeight]
-        );
-
-        canvas.style.aspectRatio = `${originalWidth} / ${originalHeight}`;
-        console.log(`Image loaded at ${originalWidth}x${originalHeight}.`);
-        needsRedraw = true;
+            console.log(`Image loaded at ${originalWidth}x${originalHeight}, displayed at ${displayWidth.toFixed(0)}x${displayHeight.toFixed(0)}.`);
+            needsRedraw = true;
+            
+        } catch (error) {
+            console.error('Error loading image:', error);
+            alert('Failed to load image. Please try a different file.');
+        }
     });
 
-    // --- Event Listeners (Unchanged) ---
+    // --- SAVE BUTTON (Safari Compatible) ---
+    const saveButton = document.getElementById("save-button");
+    
+    if (saveButton) {
+        saveButton.addEventListener("click", function(event) {
+            console.log("Save button clicked"); // Debug log
+            
+            if (!sourceTexture) {
+                alert('Please load an image first');
+                return;
+            }
+            
+            try {
+                const effect = effectSelector.value;
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                const filename = `dithered-${effect}-${timestamp}.png`;
+                
+                console.log("Attempting to save:", filename); // Debug log
+                
+                // Try toDataURL first (more reliable in Safari)
+                try {
+                    const dataUrl = canvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.href = dataUrl;
+                    link.download = filename;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    
+                    // For Safari, we need to trigger with a slight delay
+                    setTimeout(() => {
+                        link.click();
+                        setTimeout(() => {
+                            document.body.removeChild(link);
+                        }, 100);
+                    }, 0);
+                    
+                    console.log(`Image saved as ${filename}`);
+                    return;
+                } catch (dataUrlError) {
+                    console.warn('toDataURL failed, trying toBlob:', dataUrlError);
+                }
+                
+                // Fallback to toBlob if toDataURL fails
+                if (canvas.toBlob) {
+                    canvas.toBlob((blob) => {
+                        if (!blob) {
+                            console.error('toBlob returned null');
+                            alert('Could not save image. Try right-clicking the canvas and selecting "Save Image As..."');
+                            return;
+                        }
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = filename;
+                        link.style.display = 'none';
+                        document.body.appendChild(link);
+                        link.click();
+                        
+                        setTimeout(() => {
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(url);
+                        }, 100);
+                        
+                        console.log(`Image saved as ${filename} via toBlob`);
+                    }, 'image/png');
+                } else {
+                    console.error('Neither toDataURL nor toBlob worked');
+                    alert('Could not save image. Try right-clicking the canvas and selecting "Save Image As..."');
+                }
+                
+            } catch (error) {
+                console.error('Error saving image:', error);
+                alert('Failed to save image: ' + error.message);
+            }
+        }, false); // Use capture phase = false for better Safari compatibility
+    } else {
+        console.error("Save button not found!");
+    }
+
+    // --- Event Listeners ---
     const effectSelector = document.getElementById("effect-selector");
     const sliderControls = document.getElementById("slider-controls");
     const biasSliderGroup = document.getElementById("bias-slider-group");
@@ -563,8 +693,105 @@ async function main() {
         needsRedraw = true;
     });
 
+    // --- KEYBOARD SHORTCUTS (Safari Compatible) ---
+    console.log("Setting up keyboard shortcuts..."); // Debug log
+    
+    document.addEventListener('keydown', function(e) {
+        console.log("Key pressed:", e.key, "Target:", e.target.tagName); // Debug log
+        
+        // Ignore if user is typing in an input (but not file input or checkbox)
+        if (e.target.tagName === 'INPUT') {
+            if (e.target.type !== 'file' && e.target.type !== 'checkbox' && e.target.type !== 'range') {
+                console.log("Ignoring - user is typing in input");
+                return;
+            }
+        }
+        
+        // Ignore if user is in a textarea or select
+        if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+            console.log("Ignoring - user is in textarea/select");
+            return;
+        }
+        
+        // Get the key in a Safari-compatible way
+        const key = e.key ? e.key.toLowerCase() : String.fromCharCode(e.keyCode || e.which).toLowerCase();
+        console.log("Processed key:", key); // Debug log
+        
+        let handled = false;
+        
+        switch(key) {
+            case '0':
+                console.log("Switching to original");
+                effectSelector.value = 'original';
+                effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
+                handled = true;
+                break;
+            case '1':
+                console.log("Switching to grayscale");
+                effectSelector.value = 'grayscale';
+                effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
+                handled = true;
+                break;
+            case '2':
+                console.log("Switching to threshold");
+                effectSelector.value = 'threshold';
+                effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
+                handled = true;
+                break;
+            case '3':
+                console.log("Switching to bayer");
+                effectSelector.value = 'bayer';
+                effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
+                handled = true;
+                break;
+            case '4':
+                console.log("Switching to blue noise");
+                const blueNoiseOption = document.querySelector('#effect-selector option[value="blueNoise"]');
+                if (blueNoiseOption && !blueNoiseOption.disabled) {
+                    effectSelector.value = 'blueNoise';
+                    effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                handled = true;
+                break;
+            case '5':
+                console.log("Switching to Floyd-Steinberg");
+                effectSelector.value = 'floydSteinberg';
+                effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
+                handled = true;
+                break;
+            case '6':
+                console.log("Switching to Atkinson");
+                effectSelector.value = 'atkinson';
+                effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
+                handled = true;
+                break;
+            case 'p':
+                console.log("Toggling perceptual mode");
+                perceptualCheckbox.checked = !perceptualCheckbox.checked;
+                perceptualCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+                handled = true;
+                break;
+            case 's':
+                if (e.ctrlKey || e.metaKey || (!e.ctrlKey && !e.metaKey && !e.altKey)) {
+                    console.log("Triggering save");
+                    const saveBtn = document.getElementById('save-button');
+                    if (saveBtn) {
+                        saveBtn.click();
+                    }
+                    handled = true;
+                }
+                break;
+        }
+        
+        if (handled) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, false); // Use capture phase = false
+    
+    console.log("Keyboard shortcuts initialized");
 
-    // --- Render Loop (CPU Migration Logic) ---
+    // --- Render Loop ---
     async function render() {
         if (!sourceTexture) { 
             if (runtimeDisplay) runtimeDisplay.textContent = 'Runtime: N/A';
@@ -592,7 +819,6 @@ async function main() {
                 });
             }
 
-            // Bayer Dithering is now handled by CPU
             if (effect === "floydSteinberg" || effect === "atkinson" || effect === "bayer") { 
                 isCpuDither = true;
                 if (effect === "bayer") ditherFunction = bayerDither;
@@ -631,17 +857,18 @@ async function main() {
                 // --- CPU Execution Path ---
                 console.log(`Starting ${effect} CPU dithering...`);
                 
-                // 1. READ IMAGE DATA (0-255 format)
+                if (runtimeDisplay) runtimeDisplay.textContent = 'Runtime: Processing...';
+                
                 const sourceData = readImageBitmapToUint8Array(currentImageBitmap); 
                 
                 if (!sourceData) {
                     console.error(`${effect} failed: Image data not available.`);
+                    if (runtimeDisplay) runtimeDisplay.textContent = 'Runtime: Error';
                     needsRedraw = false;
                     renderLoopId = requestAnimationFrame(render);
                     return;
                 }
 
-                // 2. RUN CPU DITHERING
                 const ditheredCpuData = ditherFunction(
                     sourceData, 
                     currentImageBitmap.width, 
@@ -650,7 +877,6 @@ async function main() {
                     perceptualValueArray[0] === 1
                 );
                 
-                // 3. WRITE CPU DATA BACK TO GPU TEXTURE (0-255 Uint8Array)
                 device.queue.writeTexture(
                     { texture: ditheredTexture }, 
                     ditheredCpuData, 
@@ -659,9 +885,8 @@ async function main() {
                 );
                 
                 let endTime = performance.now(); 
-                if (runtimeDisplay) runtimeDisplay.textContent = `Runtime: ${(endTime - startTime).toFixed(2)} ms`;
+                if (runtimeDisplay) runtimeDisplay.textContent = `Runtime: ${(endTime - startTime).toFixed(2)} ms (CPU)`;
                 console.log(`${effect} CPU dithering complete in ${(endTime - startTime).toFixed(2)} ms.`);
-
 
             } else if (computePipelineToUse) {
                 // --- GPU Compute Execution Path ---
@@ -678,15 +903,15 @@ async function main() {
                 computePass.dispatchWorkgroups(Math.ceil(sourceTexture.width / 8), Math.ceil(sourceTexture.height / 8));
                 computePass.end();
 
-                const submissionPromise = device.queue.submit([encoder.finish()]);
+                device.queue.submit([encoder.finish()]);
                 
                 await device.queue.onSubmittedWorkDone(); 
                 
                 let endTime = performance.now(); 
-                if (runtimeDisplay) runtimeDisplay.textContent = `Runtime: ${(endTime - startTime).toFixed(2)} ms (Total Latency)`;
+                if (runtimeDisplay) runtimeDisplay.textContent = `Runtime: ${(endTime - startTime).toFixed(2)} ms (GPU)`;
             } else if (effect === "original") {
                  let endTime = performance.now(); 
-                 if (runtimeDisplay) runtimeDisplay.textContent = `Runtime: ${(endTime - startTime).toFixed(2)} ms (Original)`;
+                 if (runtimeDisplay) runtimeDisplay.textContent = `Runtime: ${(endTime - startTime).toFixed(2)} ms`;
             }
 
             // --- Final Render Bind Group Creation ---
@@ -731,4 +956,7 @@ async function main() {
     render();
 }
 
-main().catch(console.error);
+main().catch(error => {
+    console.error("Fatal error in main():", error);
+    alert(`Application error: ${error.message}. Please check the console for details.`);
+});
