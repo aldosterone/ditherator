@@ -5,13 +5,17 @@
  * @author Aldo Adriazola
  * @copyright (c) 2025 Aldo Adriazola. All rights reserved.
  * @license Licensed under the MIT License (or specify your chosen license).
+<<<<<<< HEAD
  * @version 1.1.0 - Improved with error handling, save feature, and keyboard shortcuts
+=======
+ * @version 1.2.1 - Fixed Bayer binding issue
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
  */
 "use strict";
 
-const blueNoiseWidth = 64;
-const blueNoiseHeight = 64;
-const blueNoiseFileName = "blue_noise_64x64.png";
+const blueNoiseWidth = 256;
+const blueNoiseHeight = 256;
+const blueNoiseFileName = "HDR_LA_0(256x256).png";
 
 let currentImageBitmap = null; 
 
@@ -27,6 +31,7 @@ function toLinearGrayscale(r, g, b) {
 }
 
 /**
+<<<<<<< HEAD
  * 🎨 Bayer Dithering (CPU Implementation)
  */
 function bayerDither(inputData, width, height, threshold, isPerceptual) {
@@ -70,19 +75,22 @@ function bayerDither(inputData, width, height, threshold, isPerceptual) {
 }
 
 /**
+=======
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
  * 🎨 Floyd-Steinberg Dithering (CPU Implementation)
  */
-function floydSteinbergDither(inputData, width, height, threshold, isPerceptual) {
+function floydSteinbergDither(inputData, width, height, brightness, isPerceptual) {
     const outputData = new Uint8Array(width * height * 4);
     const pixelGrayscale = new Float32Array(width * height);
-    const thresholdBias = threshold - 0.5;
 
     for (let i = 0; i < width * height; i++) {
         const i4 = i * 4;
         const r = inputData[i4 + 0] / 255.0;
         const g = inputData[i4 + 1] / 255.0;
         const b = inputData[i4 + 2] / 255.0;
-        pixelGrayscale[i] = toLinearGrayscale(r, g, b);
+        let gray = toLinearGrayscale(r, g, b);
+        gray = Math.max(0.0, Math.min(1.0, gray + brightness));
+        pixelGrayscale[i] = gray;
     }
     
     for (let y = 0; y < height; y++) {
@@ -96,8 +104,7 @@ function floydSteinbergDither(inputData, width, height, threshold, isPerceptual)
                 oldGrayCompare = unlinearize_approx(oldGrayLinear); 
             }
 
-            const quantizedValue = (oldGrayCompare + thresholdBias > 0.5) ? 1.0 : 0.0;
-            
+            const quantizedValue = (oldGrayCompare > 0.5) ? 1.0 : 0.0;
             const error = oldGrayLinear - quantizedValue;
 
             if (x + 1 < width) {
@@ -108,7 +115,10 @@ function floydSteinbergDither(inputData, width, height, threshold, isPerceptual)
                     pixelGrayscale[i + width - 1] += error * (3 / 16);
                 }
                 pixelGrayscale[i + width] += error * (5 / 16);
+<<<<<<< HEAD
                 
+=======
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 if (x + 1 < width) {
                     pixelGrayscale[i + width + 1] += error * (1 / 16);
                 }
@@ -127,17 +137,18 @@ function floydSteinbergDither(inputData, width, height, threshold, isPerceptual)
 /**
  * 🎨 Atkinson Dithering (CPU Implementation)
  */
-function atkinsonDither(inputData, width, height, threshold, isPerceptual) {
+function atkinsonDither(inputData, width, height, brightness, isPerceptual) {
     const outputData = new Uint8Array(width * height * 4);
     const pixelGrayscale = new Float32Array(width * height);
-    const thresholdBias = threshold - 0.5;
 
     for (let i = 0; i < width * height; i++) {
         const i4 = i * 4;
         const r = inputData[i4 + 0] / 255.0;
         const g = inputData[i4 + 1] / 255.0;
         const b = inputData[i4 + 2] / 255.0;
-        pixelGrayscale[i] = toLinearGrayscale(r, g, b);
+        let gray = toLinearGrayscale(r, g, b);
+        gray = Math.max(0.0, Math.min(1.0, gray + brightness));
+        pixelGrayscale[i] = gray;
     }
     
     for (let y = 0; y < height; y++) {
@@ -151,8 +162,7 @@ function atkinsonDither(inputData, width, height, threshold, isPerceptual) {
                 oldGrayCompare = unlinearize_approx(oldGrayLinear); 
             }
 
-            const quantizedValue = (oldGrayCompare + thresholdBias > 0.5) ? 1.0 : 0.0;
-            
+            const quantizedValue = (oldGrayCompare > 0.5) ? 1.0 : 0.0;
             const error = oldGrayLinear - quantizedValue;
             const errorFraction = error * (1 / 8); 
 
@@ -168,7 +178,10 @@ function atkinsonDither(inputData, width, height, threshold, isPerceptual) {
                     pixelGrayscale[i + width - 1] += errorFraction;
                 }
                 pixelGrayscale[i + width] += errorFraction;
+<<<<<<< HEAD
                 
+=======
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 if (x + 1 < width) {
                     pixelGrayscale[i + width + 1] += errorFraction;
                 }
@@ -241,7 +254,11 @@ async function loadBlueNoiseTextureFromFile(device, url) {
 }
 
 async function main() {
+<<<<<<< HEAD
     console.log("--- Starting Improved Ditherator v1.1 ---");
+=======
+    console.log("--- Starting Improved Ditherator v1.2.1 ---");
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
     console.log("Browser:", navigator.userAgent);
     console.log("WebGPU available:", !!navigator.gpu);
 
@@ -271,7 +288,10 @@ async function main() {
         if (renderLoopId) cancelAnimationFrame(renderLoopId);
     });
 
-    const canvas = document.querySelector("canvas");
+    const canvas = document.querySelector("canvas#main-canvas");
+    if (!canvas) {
+        throw new Error("Main canvas not found");
+    }
     const context = canvas.getContext("webgpu");
     const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
 
@@ -329,7 +349,8 @@ async function main() {
 
                 let g_compare = select(gray_linear, unlinearize_approx(gray_linear), isPerceptual > 0u);
 
-                let noiseCoord = vec2<i32>(i32(id.x % 64u), i32(id.y % 64u));
+                let noiseDims = textureDimensions(blueNoiseTexture);
+                let noiseCoord = vec2<i32>(i32(id.x % noiseDims.x), i32(id.y % noiseDims.y));
                 let threshold = textureLoad(blueNoiseTexture, noiseCoord, 0).r;
                 
                 let dither = select(0.0, 1.0, g_compare > threshold + bias);
@@ -389,6 +410,72 @@ async function main() {
             }
         `,
     });
+    
+    const bayerDitherShaderModule = device.createShaderModule({
+        label: "BayerDitherComputeShader",
+        code: `
+            @group(0) @binding(0) var sourceTexture: texture_2d<f32>;
+            @group(0) @binding(1) var outputTexture: texture_storage_2d<rgba8unorm, write>;
+            @group(0) @binding(2) var<uniform> isPerceptual: u32;
+            @group(0) @binding(3) var<uniform> matrixSize: u32;
+
+            fn linearize(c: vec3<f32>) -> vec3<f32> { return c * c; }
+            fn unlinearize_approx(c: f32) -> f32 { return sqrt(c); }
+            
+            fn getBayer8(x: u32, y: u32) -> f32 {
+                let bayer = array<array<f32, 8>, 8>(
+                    array<f32, 8>(0.0, 32.0, 8.0, 40.0, 2.0, 34.0, 10.0, 42.0),
+                    array<f32, 8>(48.0, 16.0, 56.0, 24.0, 50.0, 18.0, 58.0, 26.0),
+                    array<f32, 8>(12.0, 44.0, 4.0, 36.0, 14.0, 46.0, 6.0, 38.0),
+                    array<f32, 8>(60.0, 28.0, 52.0, 20.0, 62.0, 30.0, 54.0, 22.0),
+                    array<f32, 8>(3.0, 35.0, 11.0, 43.0, 1.0, 33.0, 9.0, 41.0),
+                    array<f32, 8>(51.0, 19.0, 59.0, 27.0, 49.0, 17.0, 57.0, 25.0),
+                    array<f32, 8>(15.0, 47.0, 7.0, 39.0, 13.0, 45.0, 5.0, 37.0),
+                    array<f32, 8>(63.0, 31.0, 55.0, 23.0, 61.0, 29.0, 53.0, 21.0)
+                );
+                return (bayer[y % 8u][x % 8u] + 0.5) / 64.0;
+            }
+            
+            fn getBayer16(x: u32, y: u32) -> f32 {
+                let bayer = array<array<f32, 16>, 16>(
+                    array<f32, 16>(0.0, 128.0, 32.0, 160.0, 8.0, 136.0, 40.0, 168.0, 2.0, 130.0, 34.0, 162.0, 10.0, 138.0, 42.0, 170.0),
+                    array<f32, 16>(192.0, 64.0, 224.0, 96.0, 200.0, 72.0, 232.0, 104.0, 194.0, 66.0, 226.0, 98.0, 202.0, 74.0, 234.0, 106.0),
+                    array<f32, 16>(48.0, 176.0, 16.0, 144.0, 56.0, 184.0, 24.0, 152.0, 50.0, 178.0, 18.0, 146.0, 58.0, 186.0, 26.0, 154.0),
+                    array<f32, 16>(240.0, 112.0, 208.0, 80.0, 248.0, 120.0, 216.0, 88.0, 242.0, 114.0, 210.0, 82.0, 250.0, 122.0, 218.0, 90.0),
+                    array<f32, 16>(12.0, 140.0, 44.0, 172.0, 4.0, 132.0, 36.0, 164.0, 14.0, 142.0, 46.0, 174.0, 6.0, 134.0, 38.0, 166.0),
+                    array<f32, 16>(204.0, 76.0, 236.0, 108.0, 196.0, 68.0, 228.0, 100.0, 206.0, 78.0, 238.0, 110.0, 198.0, 70.0, 230.0, 102.0),
+                    array<f32, 16>(60.0, 188.0, 28.0, 156.0, 52.0, 180.0, 20.0, 148.0, 62.0, 190.0, 30.0, 158.0, 54.0, 182.0, 22.0, 150.0),
+                    array<f32, 16>(252.0, 124.0, 220.0, 92.0, 244.0, 116.0, 212.0, 84.0, 254.0, 126.0, 222.0, 94.0, 246.0, 118.0, 214.0, 86.0),
+                    array<f32, 16>(3.0, 131.0, 35.0, 163.0, 11.0, 139.0, 43.0, 171.0, 1.0, 129.0, 33.0, 161.0, 9.0, 137.0, 41.0, 169.0),
+                    array<f32, 16>(195.0, 67.0, 227.0, 99.0, 203.0, 75.0, 235.0, 107.0, 193.0, 65.0, 225.0, 97.0, 201.0, 73.0, 233.0, 105.0),
+                    array<f32, 16>(51.0, 179.0, 19.0, 147.0, 59.0, 187.0, 27.0, 155.0, 49.0, 177.0, 17.0, 145.0, 57.0, 185.0, 25.0, 153.0),
+                    array<f32, 16>(243.0, 115.0, 211.0, 83.0, 251.0, 123.0, 219.0, 91.0, 241.0, 113.0, 209.0, 81.0, 249.0, 121.0, 217.0, 89.0),
+                    array<f32, 16>(15.0, 143.0, 47.0, 175.0, 7.0, 135.0, 39.0, 167.0, 13.0, 141.0, 45.0, 173.0, 5.0, 133.0, 37.0, 165.0),
+                    array<f32, 16>(207.0, 79.0, 239.0, 111.0, 199.0, 71.0, 231.0, 103.0, 205.0, 77.0, 237.0, 109.0, 197.0, 69.0, 229.0, 101.0),
+                    array<f32, 16>(63.0, 191.0, 31.0, 159.0, 55.0, 183.0, 23.0, 151.0, 61.0, 189.0, 29.0, 157.0, 53.0, 181.0, 21.0, 149.0),
+                    array<f32, 16>(255.0, 127.0, 223.0, 95.0, 247.0, 119.0, 215.0, 87.0, 253.0, 125.0, 221.0, 93.0, 245.0, 117.0, 213.0, 85.0)
+                );
+                return (bayer[y % 16u][x % 16u] + 0.5) / 256.0;
+            }
+            
+            @compute @workgroup_size(8,8)
+            fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+                let dims = textureDimensions(sourceTexture);
+                if (id.x >= dims.x || id.y >= dims.y) { return; }
+                
+                let src = textureLoad(sourceTexture, vec2<i32>(id.xy), 0);
+                let grayLinear = dot(linearize(src.rgb), vec3(0.299, 0.587, 0.114));
+                
+                let g_compare = select(grayLinear, unlinearize_approx(grayLinear), isPerceptual > 0u);
+                
+                let bayerValue = select(getBayer8(id.x, id.y), getBayer16(id.x, id.y), matrixSize == 16u);
+                
+                let quantized = select(0.0, 1.0, g_compare > bayerValue);
+                
+                textureStore(outputTexture, vec2<i32>(id.xy), vec4(quantized, quantized, quantized, 1.0));
+            }
+        `,
+    });
 
     // --- PIPELINES ---
     
@@ -404,6 +491,15 @@ async function main() {
             layout: "auto",
             compute: { module: thresholdShaderModule, entryPoint: "main" },
         });
+<<<<<<< HEAD
+=======
+        bayerComputePipeline = device.createComputePipeline({
+            label: "BayerComputePipeline",
+            layout: "auto",
+            compute: { module: bayerDitherShaderModule, entryPoint: "main" },
+        });
+        console.log("Compute pipelines created successfully (grayscale, threshold, bayer)");
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
     } catch(e) { 
         console.error("Failed to create auto-layout pipelines:", e);
         alert("Failed to create compute pipelines. Your GPU may not fully support WebGPU.");
@@ -449,7 +545,14 @@ async function main() {
     });
 
     // --- Uniform Buffers ---
+<<<<<<< HEAD
     const biasValueArray = new Float32Array([0.30]);
+=======
+    // Read initial values from HTML elements to keep them in sync
+    const biasSlider = document.getElementById("bias-slider");
+    const initialBiasValue = biasSlider ? parseFloat(biasSlider.value) : 0.15;
+    const biasValueArray = new Float32Array([initialBiasValue]);
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
     const biasUniformBuffer = device.createBuffer({
         label: "Bias Uniform Buffer",
         size: biasValueArray.byteLength,
@@ -457,13 +560,17 @@ async function main() {
     });
     device.queue.writeBuffer(biasUniformBuffer, 0, biasValueArray);
     
-    const thresholdValueArray = new Float32Array([0.5]);
+    const thresholdSlider = document.getElementById("threshold-slider");
+    const initialThresholdValue = thresholdSlider ? parseFloat(thresholdSlider.value) : 0.5;
+    const thresholdValueArray = new Float32Array([initialThresholdValue]);
     const thresholdUniformBuffer = device.createBuffer({
         label: "Threshold Uniform Buffer",
         size: thresholdValueArray.byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     device.queue.writeBuffer(thresholdUniformBuffer, 0, thresholdValueArray);
+    
+    const brightnessValueArray = new Float32Array([0.0]);
     
     const perceptualCheckbox = document.getElementById("perceptual-mode");
     const perceptualValueArray = new Uint32Array([perceptualCheckbox.checked ? 1 : 0]);
@@ -473,25 +580,151 @@ async function main() {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     device.queue.writeBuffer(perceptualUniformBuffer, 0, perceptualValueArray);
+    
+    // Read initial Bayer size from the active pattern swatch
+    const activeBayerSwatch = document.querySelector('.pattern-swatch.active');
+    const initialBayerSize = activeBayerSwatch ? parseInt(activeBayerSwatch.dataset.size) : 16;
+    const bayerSizeValueArray = new Uint32Array([initialBayerSize]);
+    const bayerSizeUniformBuffer = device.createBuffer({
+        label: "Bayer Size Uniform Buffer",
+        size: bayerSizeValueArray.byteLength,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(bayerSizeUniformBuffer, 0, bayerSizeValueArray);
+    
+    // --- BAYER PATTERN SWATCHES ---
+    function renderBayerPatternSwatch(canvas, matrixSize) {
+        if (!canvas) {
+            console.error("Canvas element not found for pattern swatch");
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            console.error("Could not get 2d context for pattern swatch");
+            return;
+        }
+        
+        // Use the canvas width/height directly
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        const bayer8 = [
+            [0, 32, 8, 40, 2, 34, 10, 42],
+            [48, 16, 56, 24, 50, 18, 58, 26],
+            [12, 44, 4, 36, 14, 46, 6, 38],
+            [60, 28, 52, 20, 62, 30, 54, 22],
+            [3, 35, 11, 43, 1, 33, 9, 41],
+            [51, 19, 59, 27, 49, 17, 57, 25],
+            [15, 47, 7, 39, 13, 45, 5, 37],
+            [63, 31, 55, 23, 61, 29, 53, 21]
+        ];
+        
+        const bayer16 = [
+            [0, 128, 32, 160, 8, 136, 40, 168, 2, 130, 34, 162, 10, 138, 42, 170],
+            [192, 64, 224, 96, 200, 72, 232, 104, 194, 66, 226, 98, 202, 74, 234, 106],
+            [48, 176, 16, 144, 56, 184, 24, 152, 50, 178, 18, 146, 58, 186, 26, 154],
+            [240, 112, 208, 80, 248, 120, 216, 88, 242, 114, 210, 82, 250, 122, 218, 90],
+            [12, 140, 44, 172, 4, 132, 36, 164, 14, 142, 46, 174, 6, 134, 38, 166],
+            [204, 76, 236, 108, 196, 68, 228, 100, 206, 78, 238, 110, 198, 70, 230, 102],
+            [60, 188, 28, 156, 52, 180, 20, 148, 62, 190, 30, 158, 54, 182, 22, 150],
+            [252, 124, 220, 92, 244, 116, 212, 84, 254, 126, 222, 94, 246, 118, 214, 86],
+            [3, 131, 35, 163, 11, 139, 43, 171, 1, 129, 33, 161, 9, 137, 41, 169],
+            [195, 67, 227, 99, 203, 75, 235, 107, 193, 65, 225, 97, 201, 73, 233, 105],
+            [51, 179, 19, 147, 59, 187, 27, 155, 49, 177, 17, 145, 57, 185, 25, 153],
+            [243, 115, 211, 83, 251, 123, 219, 91, 241, 113, 209, 81, 249, 121, 217, 89],
+            [15, 143, 47, 175, 7, 135, 39, 167, 13, 141, 45, 173, 5, 133, 37, 165],
+            [207, 79, 239, 111, 199, 71, 231, 103, 205, 77, 237, 109, 197, 69, 229, 101],
+            [63, 191, 31, 159, 55, 183, 23, 151, 61, 189, 29, 157, 53, 181, 21, 149],
+            [255, 127, 223, 95, 247, 119, 215, 87, 253, 125, 221, 93, 245, 117, 213, 85]
+        ];
+        
+        const matrix = matrixSize === 8 ? bayer8 : bayer16;
+        const matrixMax = matrixSize === 8 ? 64 : 256;
+        
+        // Calculate pixel size to fill the entire canvas
+        const pixelWidth = width / matrixSize;
+        const pixelHeight = height / matrixSize;
+        
+        // Render each cell of the matrix
+        for (let y = 0; y < matrixSize; y++) {
+            for (let x = 0; x < matrixSize; x++) {
+                const value = matrix[y][x];
+                const gray = Math.floor((value / matrixMax) * 255);
+                
+                ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+                ctx.fillRect(
+                    x * pixelWidth, 
+                    y * pixelHeight, 
+                    pixelWidth, 
+                    pixelHeight
+                );
+            }
+        }
+    }
+    
+    setTimeout(() => {
+        const swatches = document.querySelectorAll('.pattern-swatch');
+        console.log(`Found ${swatches.length} pattern swatches`);
+        
+        swatches.forEach(swatch => {
+            const canvas = swatch.querySelector('canvas');
+            const size = parseInt(swatch.dataset.size);
+            
+            console.log(`Rendering pattern swatch for ${size}x${size}, canvas:`, canvas);
+            renderBayerPatternSwatch(canvas, size);
+            
+            swatch.addEventListener('click', () => {
+                document.querySelectorAll('.pattern-swatch').forEach(s => s.classList.remove('active'));
+                swatch.classList.add('active');
+                
+                bayerSizeValueArray[0] = size;
+                device.queue.writeBuffer(bayerSizeUniformBuffer, 0, bayerSizeValueArray);
+                console.log(`Bayer matrix size changed to ${size}x${size}`);
+                needsRedraw = true;
+            });
+        });
+    }, 100);
 
     // --- State ---
     let sourceTexture, ditheredTexture, currentRenderBindGroup;
     let needsRedraw = true;
-    const runtimeDisplay = document.getElementById('runtime-display'); 
+    const runtimeDisplay = document.getElementById('runtime-display');
+    let currentEffect = 'original';
+    
+    const effects = [
+        { id: 'original', name: 'Original', needsSlider: false },
+        { id: 'grayscale', name: 'Grayscale', needsSlider: false },
+        { id: 'threshold', name: 'Threshold', needsSlider: 'threshold' },
+        { id: 'floydSteinberg', name: 'Floyd-Steinberg', needsSlider: 'brightness' },
+        { id: 'atkinson', name: 'Atkinson', needsSlider: 'brightness' },
+        { id: 'bayer', name: 'Bayer', needsSlider: 'bayerSize' },
+        { id: 'blueNoise', name: 'Blue Noise', needsSlider: 'bias' }
+    ];
 
+<<<<<<< HEAD
     // --- IMAGE LOADER WITH ERROR HANDLING ---
+=======
+    // --- IMAGE LOADER ---
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
     document.getElementById("image-loader").addEventListener("change", async (event) => {
         const file = event.target.files[0];
         if (!file) return;
         
         try {
+<<<<<<< HEAD
             // Validate file type
+=======
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
             if (!file.type.startsWith('image/')) {
                 alert('Please select a valid image file');
                 return;
             }
             
+<<<<<<< HEAD
             // Validate file size (50MB limit)
+=======
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
             const maxSize = 50 * 1024 * 1024;
             if (file.size > maxSize) {
                 alert('Image file is too large. Please select an image under 50MB.');
@@ -503,7 +736,10 @@ async function main() {
             const originalWidth = imageBitmap.width;
             const originalHeight = imageBitmap.height;
             
+<<<<<<< HEAD
             // Warn about very large images
+=======
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
             const maxDimension = 4096;
             if (originalWidth > maxDimension || originalHeight > maxDimension) {
                 if (!confirm(`This image is very large (${originalWidth}x${originalHeight}). Processing may be slow. Continue?`)) {
@@ -513,11 +749,17 @@ async function main() {
 
             currentImageBitmap = imageBitmap;
             
+<<<<<<< HEAD
             // Set canvas internal resolution to match image
             canvas.width = originalWidth;
             canvas.height = originalHeight;
             
             // Calculate display size maintaining aspect ratio
+=======
+            canvas.width = originalWidth;
+            canvas.height = originalHeight;
+            
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
             const maxDisplayWidth = window.innerWidth * 0.9;
             const maxDisplayHeight = window.innerHeight * 0.9;
             const aspectRatio = originalWidth / originalHeight;
@@ -525,7 +767,10 @@ async function main() {
             let displayWidth = originalWidth;
             let displayHeight = originalHeight;
             
+<<<<<<< HEAD
             // Scale down if needed
+=======
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
             if (displayWidth > maxDisplayWidth) {
                 displayWidth = maxDisplayWidth;
                 displayHeight = displayWidth / aspectRatio;
@@ -535,7 +780,10 @@ async function main() {
                 displayWidth = displayHeight * aspectRatio;
             }
             
+<<<<<<< HEAD
             // Set CSS display size explicitly
+=======
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
             canvas.style.width = `${displayWidth}px`;
             canvas.style.height = `${displayHeight}px`;
             
@@ -555,18 +803,33 @@ async function main() {
             console.log(`Image loaded at ${originalWidth}x${originalHeight}, displayed at ${displayWidth.toFixed(0)}x${displayHeight.toFixed(0)}.`);
             needsRedraw = true;
             
+<<<<<<< HEAD
+=======
+            generateEffectThumbnails();
+            
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
         } catch (error) {
             console.error('Error loading image:', error);
             alert('Failed to load image. Please try a different file.');
         }
     });
 
+<<<<<<< HEAD
     // --- SAVE BUTTON (Safari Compatible) ---
     const saveButton = document.getElementById("save-button");
     
     if (saveButton) {
         saveButton.addEventListener("click", function(event) {
             console.log("Save button clicked"); // Debug log
+=======
+    console.log("Setting up save button...");
+    const saveButton = document.getElementById("save-button");
+    console.log("Save button element:", saveButton);
+    
+    if (saveButton) {
+        saveButton.addEventListener("click", function(event) {
+            console.log("=== SAVE BUTTON CLICKED ===");
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
             
             if (!sourceTexture) {
                 alert('Please load an image first');
@@ -574,6 +837,7 @@ async function main() {
             }
             
             try {
+<<<<<<< HEAD
                 const effect = effectSelector.value;
                 const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
                 const filename = `dithered-${effect}-${timestamp}.png`;
@@ -581,6 +845,14 @@ async function main() {
                 console.log("Attempting to save:", filename); // Debug log
                 
                 // Try toDataURL first (more reliable in Safari)
+=======
+                const effect = currentEffect;
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                const filename = `dithered-${effect}-${timestamp}.png`;
+                
+                console.log("Attempting to save:", filename);
+                
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 try {
                     const dataUrl = canvas.toDataURL('image/png');
                     const link = document.createElement('a');
@@ -589,7 +861,10 @@ async function main() {
                     link.style.display = 'none';
                     document.body.appendChild(link);
                     
+<<<<<<< HEAD
                     // For Safari, we need to trigger with a slight delay
+=======
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                     setTimeout(() => {
                         link.click();
                         setTimeout(() => {
@@ -603,7 +878,10 @@ async function main() {
                     console.warn('toDataURL failed, trying toBlob:', dataUrlError);
                 }
                 
+<<<<<<< HEAD
                 // Fallback to toBlob if toDataURL fails
+=======
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 if (canvas.toBlob) {
                     canvas.toBlob((blob) => {
                         if (!blob) {
@@ -635,6 +913,7 @@ async function main() {
                 console.error('Error saving image:', error);
                 alert('Failed to save image: ' + error.message);
             }
+<<<<<<< HEAD
         }, false); // Use capture phase = false for better Safari compatibility
     } else {
         console.error("Save button not found!");
@@ -642,57 +921,303 @@ async function main() {
 
     // --- Event Listeners ---
     const effectSelector = document.getElementById("effect-selector");
+=======
+        }, false);
+        console.log("Save button listener attached successfully");
+    } else {
+        console.error("Save button not found!");
+    }
+    
+    // --- THEME TOGGLE ---
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+    const themeText = document.getElementById('theme-text');
+    
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+        themeIcon.textContent = '☀️';
+        themeText.textContent = 'Light';
+    }
+    
+    themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark-theme');
+        const isDark = document.body.classList.contains('dark-theme');
+        
+        if (isDark) {
+            themeIcon.textContent = '☀️';
+            themeText.textContent = 'Light';
+            localStorage.setItem('theme', 'dark');
+        } else {
+            themeIcon.textContent = '🌙';
+            themeText.textContent = 'Dark';
+            localStorage.setItem('theme', 'light');
+        }
+    });
+
+    // --- Event Listeners ---
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
     const sliderControls = document.getElementById("slider-controls");
     const biasSliderGroup = document.getElementById("bias-slider-group");
     const thresholdSliderGroup = document.getElementById("threshold-slider-group");
-    const biasSlider = document.getElementById("bias-slider");
+    const brightnessSliderGroup = document.getElementById("brightness-slider-group");
+    const bayerSizeGroup = document.getElementById("bayer-size-group");
+    // biasSlider and thresholdSlider already defined above when reading initial values
     const biasValue = document.getElementById("bias-value");
-    const thresholdSlider = document.getElementById("threshold-slider");
     const thresholdValue = document.getElementById("threshold-value");
-
-    effectSelector.addEventListener("change", () => {
+    const brightnessSlider = document.getElementById("brightness-slider");
+    const brightnessDisplayValue = document.getElementById("brightness-value");
+    
+    function setEffect(effectId) {
+        currentEffect = effectId;
         needsRedraw = true;
-        const effect = effectSelector.value;
-        if (effect === "blueNoise" || effect === "threshold" || effect === "bayer" || effect === "floydSteinberg" || effect === "atkinson") {
+        
+        document.querySelectorAll('.effect-thumb').forEach(thumb => {
+            thumb.classList.toggle('active', thumb.dataset.effect === effectId);
+        });
+        
+        const effect = effects.find(e => e.id === effectId);
+        if (!effect) return;
+        
+        if (effect.needsSlider && sliderControls) {
             sliderControls.style.display = "block";
-        } else {
+            
+            if (biasSliderGroup) biasSliderGroup.style.display = "none";
+            if (thresholdSliderGroup) thresholdSliderGroup.style.display = "none";
+            if (brightnessSliderGroup) brightnessSliderGroup.style.display = "none";
+            if (bayerSizeGroup) bayerSizeGroup.style.display = "none";
+            
+            if (effect.needsSlider === 'bias' && biasSliderGroup) {
+                biasSliderGroup.style.display = "block";
+            } else if (effect.needsSlider === 'threshold' && thresholdSliderGroup) {
+                thresholdSliderGroup.style.display = "block";
+            } else if (effect.needsSlider === 'brightness' && brightnessSliderGroup) {
+                brightnessSliderGroup.style.display = "block";
+            } else if (effect.needsSlider === 'bayerSize' && bayerSizeGroup) {
+                bayerSizeGroup.style.display = "block";
+            }
+        } else if (sliderControls) {
             sliderControls.style.display = "none";
         }
+    }
 
-        if (effect === "blueNoise") {
-            biasSliderGroup.style.display = "block";
-            thresholdSliderGroup.style.display = "none";
-        } else if (effect === "threshold" || effect === "bayer" || effect === "floydSteinberg" || effect === "atkinson") { 
-            biasSliderGroup.style.display = "none";
-            thresholdSliderGroup.style.display = "block";
+    async function generateEffectThumbnails() {
+        const container = document.getElementById('effect-thumbnails');
+        container.innerHTML = '';
+        
+        if (!currentImageBitmap) return;
+        
+        const thumbSize = 150;
+        const aspectRatio = currentImageBitmap.width / currentImageBitmap.height;
+        let thumbWidth = thumbSize;
+        let thumbHeight = thumbSize;
+        
+        if (aspectRatio > 1) {
+            thumbHeight = thumbSize / aspectRatio;
         } else {
-            biasSliderGroup.style.display = "none";
-            thresholdSliderGroup.style.display = "none";
+            thumbWidth = thumbSize * aspectRatio;
         }
-    });
-
-    biasSlider.addEventListener("input", (e) => {
-        const newValue = e.target.valueAsNumber;
-        biasValue.textContent = newValue.toFixed(2);
-        biasValueArray[0] = newValue;
-        device.queue.writeBuffer(biasUniformBuffer, 0, biasValueArray);
-        needsRedraw = true;
-    });
+        
+        for (const effect of effects) {
+            if (effect.id === 'blueNoise' && !blueNoiseTexture) continue;
+            
+            const thumbDiv = document.createElement('div');
+            thumbDiv.className = 'effect-thumb';
+            thumbDiv.dataset.effect = effect.id;
+            if (effect.id === currentEffect) {
+                thumbDiv.classList.add('active');
+            }
+            
+            const thumbCanvas = document.createElement('canvas');
+            thumbCanvas.width = thumbWidth;
+            thumbCanvas.height = thumbHeight;
+            
+            const label = document.createElement('div');
+            label.className = 'label';
+            label.textContent = effect.name;
+            
+            thumbDiv.appendChild(thumbCanvas);
+            thumbDiv.appendChild(label);
+            container.appendChild(thumbDiv);
+            
+            generateThumbnailPreview(thumbCanvas, effect.id);
+            
+            thumbDiv.addEventListener('click', () => {
+                setEffect(effect.id);
+            });
+        }
+    }
     
-    thresholdSlider.addEventListener("input", (e) => {
-        const newValue = e.target.valueAsNumber;
-        thresholdValue.textContent = newValue.toFixed(2);
-        thresholdValueArray[0] = newValue;
-        device.queue.writeBuffer(thresholdUniformBuffer, 0, thresholdValueArray);
-        needsRedraw = true;
-    });
-    
-    perceptualCheckbox.addEventListener("change", () => {
-        perceptualValueArray[0] = perceptualCheckbox.checked ? 1 : 0;
-        device.queue.writeBuffer(perceptualUniformBuffer, 0, perceptualValueArray);
-        needsRedraw = true;
-    });
+    async function generateThumbnailPreview(thumbCanvas, effectId) {
+        if (!currentImageBitmap) return;
+        
+        const ctx = thumbCanvas.getContext('2d');
+        const width = thumbCanvas.width;
+        const height = thumbCanvas.height;
+        
+        ctx.drawImage(currentImageBitmap, 0, 0, width, height);
+        
+        if (effectId === 'original') return;
+        
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = new Uint8Array(imageData.data);
+        
+        if (effectId === 'grayscale') {
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                data[i] = data[i + 1] = data[i + 2] = gray;
+            }
+        } else if (effectId === 'threshold') {
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                const val = gray > 127 ? 255 : 0;
+                data[i] = data[i + 1] = data[i + 2] = val;
+            }
+        } else if (effectId === 'bayer') {
+            const bayer = [
+                [0, 32, 8, 40, 2, 34, 10, 42],
+                [48, 16, 56, 24, 50, 18, 58, 26],
+                [12, 44, 4, 36, 14, 46, 6, 38],
+                [60, 28, 52, 20, 62, 30, 54, 22],
+                [3, 35, 11, 43, 1, 33, 9, 41],
+                [51, 19, 59, 27, 49, 17, 57, 25],
+                [15, 47, 7, 39, 13, 45, 5, 37],
+                [63, 31, 55, 23, 61, 29, 53, 21]
+            ];
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const i = (y * width + x) * 4;
+                    const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                    const threshold = (bayer[y % 8][x % 8] + 0.5) / 64.0 * 255;
+                    const val = gray > threshold ? 255 : 0;
+                    data[i] = data[i + 1] = data[i + 2] = val;
+                }
+            }
+        } else if (effectId === 'blueNoise') {
+            if (blueNoiseTexture) {
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const i = (y * width + x) * 4;
+                        const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                        
+                        const noiseX = x % blueNoiseWidth;
+                        const noiseY = y % blueNoiseHeight;
+                        const noiseVal = ((noiseX * 73 + noiseY * 179) % 256) / 255.0 * 255;
+                        
+                        const val = gray > noiseVal ? 255 : 0;
+                        data[i] = data[i + 1] = data[i + 2] = val;
+                    }
+                }
+            } else {
+                for (let i = 0; i < data.length; i += 4) {
+                    const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                    const val = gray > 127 ? 255 : 0;
+                    data[i] = data[i + 1] = data[i + 2] = val;
+                }
+            }
+        } else if (effectId === 'floydSteinberg') {
+            const grayscale = new Float32Array(width * height);
+            for (let i = 0; i < width * height; i++) {
+                const i4 = i * 4;
+                grayscale[i] = 0.299 * data[i4] + 0.587 * data[i4 + 1] + 0.114 * data[i4 + 2];
+            }
+            
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const i = y * width + x;
+                    const oldGray = grayscale[i];
+                    const newVal = oldGray > 127 ? 255 : 0;
+                    const error = oldGray - newVal;
+                    
+                    if (x + 1 < width) grayscale[i + 1] += error * 7/16;
+                    if (y + 1 < height) {
+                        if (x > 0) grayscale[i + width - 1] += error * 3/16;
+                        grayscale[i + width] += error * 5/16;
+                        if (x + 1 < width) grayscale[i + width + 1] += error * 1/16;
+                    }
+                    
+                    const i4 = i * 4;
+                    data[i4] = data[i4 + 1] = data[i4 + 2] = newVal;
+                }
+            }
+        } else if (effectId === 'atkinson') {
+            const grayscale = new Float32Array(width * height);
+            for (let i = 0; i < width * height; i++) {
+                const i4 = i * 4;
+                grayscale[i] = 0.299 * data[i4] + 0.587 * data[i4 + 1] + 0.114 * data[i4 + 2];
+            }
+            
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const i = y * width + x;
+                    const oldGray = grayscale[i];
+                    const newVal = oldGray > 127 ? 255 : 0;
+                    const error = (oldGray - newVal) / 8;
+                    
+                    if (x + 1 < width) grayscale[i + 1] += error;
+                    if (x + 2 < width) grayscale[i + 2] += error;
+                    if (y + 1 < height) {
+                        if (x > 0) grayscale[i + width - 1] += error;
+                        grayscale[i + width] += error;
+                        if (x + 1 < width) grayscale[i + width + 1] += error;
+                    }
+                    if (y + 2 < height) grayscale[i + width * 2] += error;
+                    
+                    const i4 = i * 4;
+                    data[i4] = data[i4 + 1] = data[i4 + 2] = newVal;
+                }
+            }
+        }
+        
+        const newImageData = new ImageData(new Uint8ClampedArray(data), width, height);
+        ctx.putImageData(newImageData, 0, 0);
+    }
 
+    const legacySelector = document.getElementById("effect-selector");
+    if (legacySelector) {
+        legacySelector.addEventListener("change", () => {
+            setEffect(legacySelector.value);
+        });
+    }
+
+    if (biasSlider && biasValue) {
+        biasSlider.addEventListener("input", (e) => {
+            const newValue = e.target.valueAsNumber;
+            biasValue.textContent = newValue.toFixed(2);
+            biasValueArray[0] = newValue;
+            device.queue.writeBuffer(biasUniformBuffer, 0, biasValueArray);
+            needsRedraw = true;
+        });
+    }
+    
+    if (thresholdSlider && thresholdValue) {
+        thresholdSlider.addEventListener("input", (e) => {
+            const newValue = e.target.valueAsNumber;
+            thresholdValue.textContent = newValue.toFixed(2);
+            thresholdValueArray[0] = newValue;
+            device.queue.writeBuffer(thresholdUniformBuffer, 0, thresholdValueArray);
+            needsRedraw = true;
+        });
+    }
+    
+    if (brightnessSlider && brightnessDisplayValue) {
+        brightnessSlider.addEventListener("input", (e) => {
+            const newValue = e.target.valueAsNumber;
+            brightnessDisplayValue.textContent = newValue.toFixed(2);
+            brightnessValueArray[0] = newValue;
+            needsRedraw = true;
+        });
+    }
+    
+    if (perceptualCheckbox) {
+        perceptualCheckbox.addEventListener("change", () => {
+            perceptualValueArray[0] = perceptualCheckbox.checked ? 1 : 0;
+            device.queue.writeBuffer(perceptualUniformBuffer, 0, perceptualValueArray);
+            needsRedraw = true;
+        });
+    }
+
+<<<<<<< HEAD
     // --- KEYBOARD SHORTCUTS (Safari Compatible) ---
     console.log("Setting up keyboard shortcuts..."); // Debug log
     
@@ -700,6 +1225,15 @@ async function main() {
         console.log("Key pressed:", e.key, "Target:", e.target.tagName); // Debug log
         
         // Ignore if user is typing in an input (but not file input or checkbox)
+=======
+    // --- KEYBOARD SHORTCUTS ---
+    console.log("Setting up keyboard shortcuts...");
+    console.log("Document ready state:", document.readyState);
+    
+    document.addEventListener('keydown', function(e) {
+        console.log("=== KEY PRESSED ===", e.key, "keyCode:", e.keyCode, "Target:", e.target.tagName);
+        
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
         if (e.target.tagName === 'INPUT') {
             if (e.target.type !== 'file' && e.target.type !== 'checkbox' && e.target.type !== 'range') {
                 console.log("Ignoring - user is typing in input");
@@ -707,62 +1241,99 @@ async function main() {
             }
         }
         
+<<<<<<< HEAD
         // Ignore if user is in a textarea or select
+=======
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
         if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
             console.log("Ignoring - user is in textarea/select");
             return;
         }
         
+<<<<<<< HEAD
         // Get the key in a Safari-compatible way
         const key = e.key ? e.key.toLowerCase() : String.fromCharCode(e.keyCode || e.which).toLowerCase();
         console.log("Processed key:", key); // Debug log
+=======
+        const key = e.key ? e.key.toLowerCase() : String.fromCharCode(e.keyCode || e.which).toLowerCase();
+        console.log("Processed key:", key);
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
         
         let handled = false;
         
         switch(key) {
             case '0':
                 console.log("Switching to original");
+<<<<<<< HEAD
                 effectSelector.value = 'original';
                 effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
+=======
+                setEffect('original');
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 handled = true;
                 break;
             case '1':
                 console.log("Switching to grayscale");
+<<<<<<< HEAD
                 effectSelector.value = 'grayscale';
                 effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
+=======
+                setEffect('grayscale');
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 handled = true;
                 break;
             case '2':
                 console.log("Switching to threshold");
+<<<<<<< HEAD
                 effectSelector.value = 'threshold';
                 effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
+=======
+                setEffect('threshold');
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 handled = true;
                 break;
             case '3':
                 console.log("Switching to bayer");
+<<<<<<< HEAD
                 effectSelector.value = 'bayer';
                 effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
+=======
+                setEffect('bayer');
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 handled = true;
                 break;
             case '4':
                 console.log("Switching to blue noise");
+<<<<<<< HEAD
                 const blueNoiseOption = document.querySelector('#effect-selector option[value="blueNoise"]');
                 if (blueNoiseOption && !blueNoiseOption.disabled) {
                     effectSelector.value = 'blueNoise';
                     effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
+=======
+                if (blueNoiseTexture) {
+                    setEffect('blueNoise');
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 }
                 handled = true;
                 break;
             case '5':
                 console.log("Switching to Floyd-Steinberg");
+<<<<<<< HEAD
                 effectSelector.value = 'floydSteinberg';
                 effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
+=======
+                setEffect('floydSteinberg');
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 handled = true;
                 break;
             case '6':
                 console.log("Switching to Atkinson");
+<<<<<<< HEAD
                 effectSelector.value = 'atkinson';
                 effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
+=======
+                setEffect('atkinson');
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 handled = true;
                 break;
             case 'p':
@@ -787,9 +1358,19 @@ async function main() {
             e.preventDefault();
             e.stopPropagation();
         }
+<<<<<<< HEAD
     }, false); // Use capture phase = false
     
     console.log("Keyboard shortcuts initialized");
+=======
+    }, false);
+    
+    console.log("Keyboard shortcuts listener attached successfully");
+    console.log("=== ALL EVENT LISTENERS REGISTERED ===");
+    console.log("Ready for user interaction");
+    
+    setEffect('original');
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
 
     // --- Render Loop ---
     async function render() {
@@ -798,7 +1379,7 @@ async function main() {
             renderLoopId = requestAnimationFrame(render); 
             return; 
         }
-        const effect = document.getElementById("effect-selector").value;
+        const effect = currentEffect;
         let textureToDrawView;
 
         if (needsRedraw) {
@@ -819,11 +1400,23 @@ async function main() {
                 });
             }
 
+<<<<<<< HEAD
             if (effect === "floydSteinberg" || effect === "atkinson" || effect === "bayer") { 
+=======
+            if (effect === "floydSteinberg" || effect === "atkinson") { 
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 isCpuDither = true;
-                if (effect === "bayer") ditherFunction = bayerDither;
-                else if (effect === "floydSteinberg") ditherFunction = floydSteinbergDither;
+                if (effect === "floydSteinberg") ditherFunction = floydSteinbergDither;
                 else ditherFunction = atkinsonDither;
+            } else if (effect === "bayer") {
+                computePipelineToUse = bayerComputePipeline;
+                computeBindGroupLayoutToUse = bayerComputePipeline.getBindGroupLayout(0); 
+                computeBindGroupEntries = [
+                    { binding: 0, resource: sourceTexture.createView() },
+                    { binding: 1, resource: ditheredTexture.createView() }, 
+                    { binding: 2, resource: { buffer: perceptualUniformBuffer } },
+                    { binding: 3, resource: { buffer: bayerSizeUniformBuffer } },
+                ];
             } else if (effect === "grayscale") {
                 computePipelineToUse = grayscaleComputePipeline;
                 computeBindGroupLayoutToUse = grayscaleComputePipeline.getBindGroupLayout(0); 
@@ -854,7 +1447,6 @@ async function main() {
             }
 
             if (isCpuDither) {
-                // --- CPU Execution Path ---
                 console.log(`Starting ${effect} CPU dithering...`);
                 
                 if (runtimeDisplay) runtimeDisplay.textContent = 'Runtime: Processing...';
@@ -873,7 +1465,7 @@ async function main() {
                     sourceData, 
                     currentImageBitmap.width, 
                     currentImageBitmap.height, 
-                    thresholdValueArray[0], 
+                    brightnessValueArray[0],
                     perceptualValueArray[0] === 1
                 );
                 
@@ -889,7 +1481,7 @@ async function main() {
                 console.log(`${effect} CPU dithering complete in ${(endTime - startTime).toFixed(2)} ms.`);
 
             } else if (computePipelineToUse) {
-                // --- GPU Compute Execution Path ---
+                console.log(`Starting ${effect} GPU compute...`);
                 const encoder = device.createCommandEncoder();
                 
                 const computePass = encoder.beginComputePass();
@@ -914,7 +1506,6 @@ async function main() {
                  if (runtimeDisplay) runtimeDisplay.textContent = `Runtime: ${(endTime - startTime).toFixed(2)} ms`;
             }
 
-            // --- Final Render Bind Group Creation ---
             if (effect === "original") {
                 textureToDrawView = sourceTexture.createView();
             } else {
@@ -932,7 +1523,6 @@ async function main() {
             needsRedraw = false;
         }
 
-        // Final canvas drawing pass (always runs)
         const renderEncoder = device.createCommandEncoder();
         const view = context.getCurrentTexture().createView();
         const pass = renderEncoder.beginRenderPass({
@@ -954,9 +1544,20 @@ async function main() {
     }
 
     render();
+    
+    console.log("=== MAIN() COMPLETED SUCCESSFULLY ===");
 }
 
 main().catch(error => {
+<<<<<<< HEAD
     console.error("Fatal error in main():", error);
     alert(`Application error: ${error.message}. Please check the console for details.`);
 });
+=======
+    console.error("=== FATAL ERROR IN MAIN() ===");
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+    alert(`Application error: ${error.message}. Please check the console for details.`);
+});
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)

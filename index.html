@@ -13,9 +13,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WebGPU Viewer - Dithering Effects</title>
     <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f8f8;
+            --bg-control: #f0f0f0;
+            --border-color: #ccc;
+            --border-light: #ddd;
+            --text-primary: #000000;
+            --text-secondary: #333;
+            --text-muted: #666;
+            --button-bg: #007bff;
+            --button-hover: #0056b3;
+            --button-active: #004085;
+            --thumb-bg: white;
+            --thumb-hover-shadow: rgba(0,0,0,0.15);
+            --thumb-active-glow: rgba(0,123,255,0.25);
+        }
+        
+        body.dark-theme {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2a2a2a;
+            --bg-control: #333333;
+            --border-color: #444;
+            --border-light: #555;
+            --text-primary: #e0e0e0;
+            --text-secondary: #d0d0d0;
+            --text-muted: #999;
+            --button-bg: #0d6efd;
+            --button-hover: #0b5ed7;
+            --button-active: #0a58ca;
+            --thumb-bg: #2a2a2a;
+            --thumb-hover-shadow: rgba(255,255,255,0.15);
+            --thumb-active-glow: rgba(13,110,253,0.35);
+        }
+        
         body { 
             margin: 0; 
-            background-color: #ffffff; 
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
             display: flex; 
             flex-direction: column; 
             align-items: center; 
@@ -25,6 +60,7 @@
             font-family: sans-serif; 
             padding-top: 20px; 
             padding-bottom: 20px;
+            transition: background-color 0.3s, color 0.3s;
         }
         canvas {
             border: 1px solid #ccc;
@@ -50,6 +86,75 @@
             flex-wrap: wrap;
             align-items: center;
             gap: 15px;
+<<<<<<< HEAD
+=======
+        }
+        
+        #effect-thumbnails {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            padding: 15px;
+            background-color: #f8f8f8;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            max-width: 90vw;
+        }
+        
+        .effect-thumb {
+            position: relative;
+            cursor: pointer;
+            border: 3px solid transparent;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+            background-color: white;
+            aspect-ratio: 1;
+        }
+        
+        .effect-thumb:hover {
+            border-color: #007bff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .effect-thumb.active {
+            border-color: #0056b3;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+        
+        .effect-thumb canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+        }
+        
+        .effect-thumb .label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            color: white;
+            padding: 8px 6px 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            pointer-events: none;
+        }
+        
+        .effect-thumb .processing {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            color: var(--text-muted);
+            background: var(--bg-secondary);
+            padding: 4px 8px;
+            border-radius: 4px;
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
         }
         .slider-group {
             display: none;
@@ -61,7 +166,231 @@
         }
         #runtime-display { 
             font-weight: bold;
+<<<<<<< HEAD
             color: #333;
+=======
+            color: var(--text-secondary);
+        }
+        
+        button {
+            padding: 6px 10px;
+            font-size: 16px;
+            background-color: var(--button-bg);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: var(--button-hover);
+        }
+        button:active {
+            background-color: var(--button-active);
+        }
+        
+        .theme-toggle {
+            background: transparent;
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .theme-toggle:hover {
+            background: var(--bg-secondary);
+            border-color: var(--button-bg);
+        }
+        
+        .pattern-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .pattern-swatch {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            padding: 8px;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            background: var(--thumb-bg);
+        }
+        
+        .pattern-swatch:hover {
+            border-color: var(--button-bg);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px var(--thumb-hover-shadow);
+        }
+        
+        .pattern-swatch.active {
+            border-color: var(--button-hover);
+            box-shadow: 0 0 0 2px var(--thumb-active-glow);
+        }
+        
+        .pattern-swatch canvas {
+            display: block;
+            border-radius: 4px;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            width: 60px;
+            height: 60px;
+        }
+        
+        .pattern-swatch span {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+                
+        #controls select, 
+        #controls input[type="file"],
+        #controls label,
+        #slider-controls label,
+        #slider-controls span {
+            font-size: 16px; 
+        }
+        
+        #controls select,
+        #controls input[type="file"] {
+            padding: 6px 10px;
+            height: 36px;
+            box-sizing: border-box;
+        }
+
+        #slider-controls input[type="range"] {
+            width: 150px;
+            height: 30px;
+        }
+        
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        label {
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .help-text {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+            max-width: 80vw;
+        }
+
+        /* Mobile-first improvements */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                gap: 10px;
+            }
+            
+            canvas {
+                max-width: 95vw !important;
+                max-height: 70vh !important;
+            }
+            
+            #effect-thumbnails {
+                grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+                gap: 8px;
+                padding: 10px;
+            }
+            
+            .effect-thumb .label {
+                font-size: 9px;
+                padding: 6px 4px 3px;
+            }
+            
+            #controls {
+                flex-direction: column;
+                width: 95vw;
+                padding: 15px;
+                align-items: stretch;
+            }
+            
+            #controls > * {
+                margin: 5px 0;
+            }
+            
+            #controls select,
+            #controls input[type="file"],
+            #controls label,
+            button {
+                font-size: 18px;
+                width: 100%;
+            }
+            
+            #controls select,
+            #controls input[type="file"],
+            button {
+                height: 44px;
+                padding: 10px;
+            }
+            
+            #color-controls {
+                flex-direction: row;
+                align-items: center;
+                gap: 10px;
+                width: 100%;
+                margin-top: 10px;
+            }
+            
+            #runtime-display {
+                margin-left: 0;
+                margin-top: 10px;
+                display: block;
+                width: 100%;
+            }
+            
+            #slider-controls {
+                width: 95vw;
+                padding: 15px;
+            }
+            
+            .slider-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            #slider-controls input[type="range"] {
+                width: 100%;
+                height: 40px;
+            }
+            
+            #slider-controls label,
+            #slider-controls span {
+                font-size: 18px;
+            }
+            
+            input[type="checkbox"] {
+                width: 24px;
+                height: 24px;
+            }
+            
+            .help-text {
+                max-width: 95vw;
+                font-size: 11px;
+            }
+            
+            .pattern-selector {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            /* .pattern-swatch canvas {
+                width: 50px;
+                height: 50px;
+            } */
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
         }
         
         button {
@@ -207,20 +536,20 @@
 </head>
 <body>
     <div id="controls">
-        <label for="effect-selector">Effect:</label>
-        <select id="effect-selector">
-            <option value="original" selected>Original (Color)</option>
-            <option value="grayscale">Grayscale (8-bit)</option>
-            <option value="threshold">1-Bit (Simple Threshold)</option>
-            <option value="bayer">Bayer Dithering (1-bit)</option>
-            <option value="blueNoise">Blue Noise Dithering (1-bit)</option>
-            <option value="floydSteinberg">Floyd-Steinberg (1-bit)</option>
-            <option value="atkinson">Atkinson Dithering (1-bit)</option>
-        </select>
+        <input type="file" id="image-loader" accept="image/*">
         
+<<<<<<< HEAD
         <input type="file" id="image-loader" accept="image/*">
         
         <button id="save-button">Save Image</button>
+=======
+        <button id="save-button">Save Image</button>
+        
+        <button id="theme-toggle" class="theme-toggle">
+            <span id="theme-icon">🌙</span>
+            <span id="theme-text">Dark</span>
+        </button>
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
         
         <span id="color-controls">
             <input type="checkbox" id="perceptual-mode" checked>
@@ -229,21 +558,43 @@
         
         <span id="runtime-display">Runtime: N/A</span>
     </div>
+<<<<<<< HEAD
+=======
+    
+    <div id="effect-thumbnails"></div>
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
     
     <div id="slider-controls" style="display: none;">
         <div id="bias-slider-group" class="slider-group">
             <label for="bias-slider">Noise Bias:</label>
-            <input type="range" id="bias-slider" min="-0.5" max="0.5" step="0.01" value="0.30">
-            <span id="bias-value">0.30</span>
+            <input type="range" id="bias-slider" min="-0.5" max="0.5" step="0.01" value="0.15">
+            <span id="bias-value">0.15</span>
         </div>
         <div id="threshold-slider-group" class="slider-group">
             <label for="threshold-slider">Quantization Threshold:</label>
             <input type="range" id="threshold-slider" min="0.0" max="1.0" step="0.01" value="0.5">
             <span id="threshold-value">0.50</span>
         </div>
+        <div id="bayer-size-group" class="slider-group">
+            <label for="bayer-size">Bayer Matrix:</label>
+            <div id="bayer-pattern-selector" class="pattern-selector">
+                <div class="pattern-swatch" data-size="8">
+                    <canvas width="60" height="60"></canvas>
+                    <span>8×8</span>
+                </div>
+                <div class="pattern-swatch active" data-size="16">
+                    <canvas width="60" height="60"></canvas>
+                    <span>16×16</span>
+                </div>
+            </div>
+        </div>
     </div>
 
+<<<<<<< HEAD
     <canvas width="1280" height="960"></canvas>
+=======
+    <canvas id="main-canvas" width="1280" height="960"></canvas>
+>>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
     
     <div class="help-text">
         Keyboard shortcuts: 0-6 (switch effects), P (toggle perceptual), S (save image)
