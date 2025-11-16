@@ -5,11 +5,7 @@
  * @author Aldo Adriazola
  * @copyright (c) 2025 Aldo Adriazola. All rights reserved.
  * @license Licensed under the MIT License (or specify your chosen license).
-<<<<<<< HEAD
- * @version 1.1.0 - Improved with error handling, save feature, and keyboard shortcuts
-=======
  * @version 1.2.1 - Fixed Bayer binding issue
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
  */
 "use strict";
 
@@ -31,52 +27,6 @@ function toLinearGrayscale(r, g, b) {
 }
 
 /**
-<<<<<<< HEAD
- * 🎨 Bayer Dithering (CPU Implementation)
- */
-function bayerDither(inputData, width, height, threshold, isPerceptual) {
-    const outputData = new Uint8Array(width * height * 4);
-    
-    const bayer = [
-      [0, 32, 8, 40, 2, 34, 10, 42], [48, 16, 56, 24, 50, 18, 58, 26],
-      [12, 44, 4, 36, 14, 46, 6, 38], [60, 28, 52, 20, 62, 30, 54, 22],
-      [3, 35, 11, 43, 1, 33, 9, 41], [51, 19, 59, 27, 49, 17, 57, 25],
-      [15, 47, 7, 39, 13, 45, 5, 37], [63, 31, 55, 23, 61, 29, 53, 21]
-    ];
-    const thresholdBias = threshold - 0.5;
-
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            const i = (y * width + x) * 4;
-            
-            const R = inputData[i + 0] / 255.0;
-            const G = inputData[i + 1] / 255.0;
-            const B = inputData[i + 2] / 255.0;
-            
-            let oldGrayLinear = toLinearGrayscale(R, G, B);
-            
-            let oldGrayCompare = oldGrayLinear;
-            if (isPerceptual) {
-                oldGrayCompare = unlinearize_approx(oldGrayLinear); 
-            }
-            
-            const bayerVal = (bayer[y % 8][x % 8] + 0.5) / 64.0;
-            
-            const quantizedValue = (oldGrayCompare > bayerVal + thresholdBias) ? 1.0 : 0.0;
-            
-            const outputVal = quantizedValue * 255;
-            outputData[i + 0] = outputVal;
-            outputData[i + 1] = outputVal;
-            outputData[i + 2] = outputVal;
-            outputData[i + 3] = 255;
-        }
-    }
-    return outputData;
-}
-
-/**
-=======
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
  * 🎨 Floyd-Steinberg Dithering (CPU Implementation)
  */
 function floydSteinbergDither(inputData, width, height, brightness, isPerceptual) {
@@ -115,10 +65,6 @@ function floydSteinbergDither(inputData, width, height, brightness, isPerceptual
                     pixelGrayscale[i + width - 1] += error * (3 / 16);
                 }
                 pixelGrayscale[i + width] += error * (5 / 16);
-<<<<<<< HEAD
-                
-=======
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 if (x + 1 < width) {
                     pixelGrayscale[i + width + 1] += error * (1 / 16);
                 }
@@ -178,10 +124,6 @@ function atkinsonDither(inputData, width, height, brightness, isPerceptual) {
                     pixelGrayscale[i + width - 1] += errorFraction;
                 }
                 pixelGrayscale[i + width] += errorFraction;
-<<<<<<< HEAD
-                
-=======
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 if (x + 1 < width) {
                     pixelGrayscale[i + width + 1] += errorFraction;
                 }
@@ -254,11 +196,7 @@ async function loadBlueNoiseTextureFromFile(device, url) {
 }
 
 async function main() {
-<<<<<<< HEAD
-    console.log("--- Starting Improved Ditherator v1.1 ---");
-=======
     console.log("--- Starting Improved Ditherator v1.2.1 ---");
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
     console.log("Browser:", navigator.userAgent);
     console.log("WebGPU available:", !!navigator.gpu);
 
@@ -479,7 +417,7 @@ async function main() {
 
     // --- PIPELINES ---
     
-    let grayscaleComputePipeline, thresholdComputePipeline;
+    let grayscaleComputePipeline, thresholdComputePipeline, bayerComputePipeline;
     try {
         grayscaleComputePipeline = device.createComputePipeline({
             label: "GrayscaleComputePipeline",
@@ -491,15 +429,12 @@ async function main() {
             layout: "auto",
             compute: { module: thresholdShaderModule, entryPoint: "main" },
         });
-<<<<<<< HEAD
-=======
         bayerComputePipeline = device.createComputePipeline({
             label: "BayerComputePipeline",
             layout: "auto",
             compute: { module: bayerDitherShaderModule, entryPoint: "main" },
         });
         console.log("Compute pipelines created successfully (grayscale, threshold, bayer)");
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
     } catch(e) { 
         console.error("Failed to create auto-layout pipelines:", e);
         alert("Failed to create compute pipelines. Your GPU may not fully support WebGPU.");
@@ -545,14 +480,10 @@ async function main() {
     });
 
     // --- Uniform Buffers ---
-<<<<<<< HEAD
-    const biasValueArray = new Float32Array([0.30]);
-=======
     // Read initial values from HTML elements to keep them in sync
     const biasSlider = document.getElementById("bias-slider");
     const initialBiasValue = biasSlider ? parseFloat(biasSlider.value) : 0.15;
     const biasValueArray = new Float32Array([initialBiasValue]);
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
     const biasUniformBuffer = device.createBuffer({
         label: "Bias Uniform Buffer",
         size: biasValueArray.byteLength,
@@ -702,29 +633,17 @@ async function main() {
         { id: 'blueNoise', name: 'Blue Noise', needsSlider: 'bias' }
     ];
 
-<<<<<<< HEAD
-    // --- IMAGE LOADER WITH ERROR HANDLING ---
-=======
     // --- IMAGE LOADER ---
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
     document.getElementById("image-loader").addEventListener("change", async (event) => {
         const file = event.target.files[0];
         if (!file) return;
         
         try {
-<<<<<<< HEAD
-            // Validate file type
-=======
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
             if (!file.type.startsWith('image/')) {
                 alert('Please select a valid image file');
                 return;
             }
             
-<<<<<<< HEAD
-            // Validate file size (50MB limit)
-=======
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
             const maxSize = 50 * 1024 * 1024;
             if (file.size > maxSize) {
                 alert('Image file is too large. Please select an image under 50MB.');
@@ -736,10 +655,6 @@ async function main() {
             const originalWidth = imageBitmap.width;
             const originalHeight = imageBitmap.height;
             
-<<<<<<< HEAD
-            // Warn about very large images
-=======
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
             const maxDimension = 4096;
             if (originalWidth > maxDimension || originalHeight > maxDimension) {
                 if (!confirm(`This image is very large (${originalWidth}x${originalHeight}). Processing may be slow. Continue?`)) {
@@ -749,17 +664,9 @@ async function main() {
 
             currentImageBitmap = imageBitmap;
             
-<<<<<<< HEAD
-            // Set canvas internal resolution to match image
             canvas.width = originalWidth;
             canvas.height = originalHeight;
             
-            // Calculate display size maintaining aspect ratio
-=======
-            canvas.width = originalWidth;
-            canvas.height = originalHeight;
-            
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
             const maxDisplayWidth = window.innerWidth * 0.9;
             const maxDisplayHeight = window.innerHeight * 0.9;
             const aspectRatio = originalWidth / originalHeight;
@@ -767,10 +674,6 @@ async function main() {
             let displayWidth = originalWidth;
             let displayHeight = originalHeight;
             
-<<<<<<< HEAD
-            // Scale down if needed
-=======
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
             if (displayWidth > maxDisplayWidth) {
                 displayWidth = maxDisplayWidth;
                 displayHeight = displayWidth / aspectRatio;
@@ -780,10 +683,6 @@ async function main() {
                 displayWidth = displayHeight * aspectRatio;
             }
             
-<<<<<<< HEAD
-            // Set CSS display size explicitly
-=======
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
             canvas.style.width = `${displayWidth}px`;
             canvas.style.height = `${displayHeight}px`;
             
@@ -803,25 +702,14 @@ async function main() {
             console.log(`Image loaded at ${originalWidth}x${originalHeight}, displayed at ${displayWidth.toFixed(0)}x${displayHeight.toFixed(0)}.`);
             needsRedraw = true;
             
-<<<<<<< HEAD
-=======
             generateEffectThumbnails();
             
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
         } catch (error) {
             console.error('Error loading image:', error);
             alert('Failed to load image. Please try a different file.');
         }
     });
 
-<<<<<<< HEAD
-    // --- SAVE BUTTON (Safari Compatible) ---
-    const saveButton = document.getElementById("save-button");
-    
-    if (saveButton) {
-        saveButton.addEventListener("click", function(event) {
-            console.log("Save button clicked"); // Debug log
-=======
     console.log("Setting up save button...");
     const saveButton = document.getElementById("save-button");
     console.log("Save button element:", saveButton);
@@ -829,7 +717,6 @@ async function main() {
     if (saveButton) {
         saveButton.addEventListener("click", function(event) {
             console.log("=== SAVE BUTTON CLICKED ===");
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
             
             if (!sourceTexture) {
                 alert('Please load an image first');
@@ -837,22 +724,12 @@ async function main() {
             }
             
             try {
-<<<<<<< HEAD
-                const effect = effectSelector.value;
-                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-                const filename = `dithered-${effect}-${timestamp}.png`;
-                
-                console.log("Attempting to save:", filename); // Debug log
-                
-                // Try toDataURL first (more reliable in Safari)
-=======
                 const effect = currentEffect;
                 const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
                 const filename = `dithered-${effect}-${timestamp}.png`;
                 
                 console.log("Attempting to save:", filename);
                 
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 try {
                     const dataUrl = canvas.toDataURL('image/png');
                     const link = document.createElement('a');
@@ -861,10 +738,6 @@ async function main() {
                     link.style.display = 'none';
                     document.body.appendChild(link);
                     
-<<<<<<< HEAD
-                    // For Safari, we need to trigger with a slight delay
-=======
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                     setTimeout(() => {
                         link.click();
                         setTimeout(() => {
@@ -878,10 +751,6 @@ async function main() {
                     console.warn('toDataURL failed, trying toBlob:', dataUrlError);
                 }
                 
-<<<<<<< HEAD
-                // Fallback to toBlob if toDataURL fails
-=======
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 if (canvas.toBlob) {
                     canvas.toBlob((blob) => {
                         if (!blob) {
@@ -913,15 +782,6 @@ async function main() {
                 console.error('Error saving image:', error);
                 alert('Failed to save image: ' + error.message);
             }
-<<<<<<< HEAD
-        }, false); // Use capture phase = false for better Safari compatibility
-    } else {
-        console.error("Save button not found!");
-    }
-
-    // --- Event Listeners ---
-    const effectSelector = document.getElementById("effect-selector");
-=======
         }, false);
         console.log("Save button listener attached successfully");
     } else {
@@ -956,7 +816,6 @@ async function main() {
     });
 
     // --- Event Listeners ---
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
     const sliderControls = document.getElementById("slider-controls");
     const biasSliderGroup = document.getElementById("bias-slider-group");
     const thresholdSliderGroup = document.getElementById("threshold-slider-group");
@@ -1217,15 +1076,6 @@ async function main() {
         });
     }
 
-<<<<<<< HEAD
-    // --- KEYBOARD SHORTCUTS (Safari Compatible) ---
-    console.log("Setting up keyboard shortcuts..."); // Debug log
-    
-    document.addEventListener('keydown', function(e) {
-        console.log("Key pressed:", e.key, "Target:", e.target.tagName); // Debug log
-        
-        // Ignore if user is typing in an input (but not file input or checkbox)
-=======
     // --- KEYBOARD SHORTCUTS ---
     console.log("Setting up keyboard shortcuts...");
     console.log("Document ready state:", document.readyState);
@@ -1233,7 +1083,6 @@ async function main() {
     document.addEventListener('keydown', function(e) {
         console.log("=== KEY PRESSED ===", e.key, "keyCode:", e.keyCode, "Target:", e.target.tagName);
         
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
         if (e.target.tagName === 'INPUT') {
             if (e.target.type !== 'file' && e.target.type !== 'checkbox' && e.target.type !== 'range') {
                 console.log("Ignoring - user is typing in input");
@@ -1241,99 +1090,52 @@ async function main() {
             }
         }
         
-<<<<<<< HEAD
-        // Ignore if user is in a textarea or select
-=======
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
         if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
             console.log("Ignoring - user is in textarea/select");
             return;
         }
         
-<<<<<<< HEAD
-        // Get the key in a Safari-compatible way
-        const key = e.key ? e.key.toLowerCase() : String.fromCharCode(e.keyCode || e.which).toLowerCase();
-        console.log("Processed key:", key); // Debug log
-=======
         const key = e.key ? e.key.toLowerCase() : String.fromCharCode(e.keyCode || e.which).toLowerCase();
         console.log("Processed key:", key);
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
         
         let handled = false;
         
         switch(key) {
             case '0':
                 console.log("Switching to original");
-<<<<<<< HEAD
-                effectSelector.value = 'original';
-                effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
-=======
                 setEffect('original');
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 handled = true;
                 break;
             case '1':
                 console.log("Switching to grayscale");
-<<<<<<< HEAD
-                effectSelector.value = 'grayscale';
-                effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
-=======
                 setEffect('grayscale');
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 handled = true;
                 break;
             case '2':
                 console.log("Switching to threshold");
-<<<<<<< HEAD
-                effectSelector.value = 'threshold';
-                effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
-=======
                 setEffect('threshold');
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 handled = true;
                 break;
             case '3':
                 console.log("Switching to bayer");
-<<<<<<< HEAD
-                effectSelector.value = 'bayer';
-                effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
-=======
                 setEffect('bayer');
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 handled = true;
                 break;
             case '4':
                 console.log("Switching to blue noise");
-<<<<<<< HEAD
-                const blueNoiseOption = document.querySelector('#effect-selector option[value="blueNoise"]');
-                if (blueNoiseOption && !blueNoiseOption.disabled) {
-                    effectSelector.value = 'blueNoise';
-                    effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
-=======
                 if (blueNoiseTexture) {
                     setEffect('blueNoise');
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 }
                 handled = true;
                 break;
             case '5':
                 console.log("Switching to Floyd-Steinberg");
-<<<<<<< HEAD
-                effectSelector.value = 'floydSteinberg';
-                effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
-=======
                 setEffect('floydSteinberg');
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 handled = true;
                 break;
             case '6':
                 console.log("Switching to Atkinson");
-<<<<<<< HEAD
-                effectSelector.value = 'atkinson';
-                effectSelector.dispatchEvent(new Event('change', { bubbles: true }));
-=======
                 setEffect('atkinson');
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 handled = true;
                 break;
             case 'p':
@@ -1358,11 +1160,6 @@ async function main() {
             e.preventDefault();
             e.stopPropagation();
         }
-<<<<<<< HEAD
-    }, false); // Use capture phase = false
-    
-    console.log("Keyboard shortcuts initialized");
-=======
     }, false);
     
     console.log("Keyboard shortcuts listener attached successfully");
@@ -1370,7 +1167,6 @@ async function main() {
     console.log("Ready for user interaction");
     
     setEffect('original');
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
 
     // --- Render Loop ---
     async function render() {
@@ -1400,11 +1196,7 @@ async function main() {
                 });
             }
 
-<<<<<<< HEAD
-            if (effect === "floydSteinberg" || effect === "atkinson" || effect === "bayer") { 
-=======
             if (effect === "floydSteinberg" || effect === "atkinson") { 
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
                 isCpuDither = true;
                 if (effect === "floydSteinberg") ditherFunction = floydSteinbergDither;
                 else ditherFunction = atkinsonDither;
@@ -1549,15 +1341,9 @@ async function main() {
 }
 
 main().catch(error => {
-<<<<<<< HEAD
-    console.error("Fatal error in main():", error);
-    alert(`Application error: ${error.message}. Please check the console for details.`);
-});
-=======
     console.error("=== FATAL ERROR IN MAIN() ===");
     console.error("Error name:", error.name);
     console.error("Error message:", error.message);
     console.error("Error stack:", error.stack);
     alert(`Application error: ${error.message}. Please check the console for details.`);
 });
->>>>>>> 956a580 (Update index and viewer; remove app.js and viewer copy.js; add PNG)
