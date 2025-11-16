@@ -1117,25 +1117,26 @@ async function main() {
                 handled = true;
                 break;
             case '3':
+                console.log("Switching to Floyd-Steinberg");
+                setEffect('floydSteinberg');
+
+                handled = true;
+                break;
+            case '4':
+                console.log("Switching to Atkinson");
+                setEffect('atkinson');
+                handled = true;
+                break;
+            case '5':
                 console.log("Switching to bayer");
                 setEffect('bayer');
                 handled = true;
                 break;
-            case '4':
+            case '6':
                 console.log("Switching to blue noise");
                 if (blueNoiseTexture) {
                     setEffect('blueNoise');
                 }
-                handled = true;
-                break;
-            case '5':
-                console.log("Switching to Floyd-Steinberg");
-                setEffect('floydSteinberg');
-                handled = true;
-                break;
-            case '6':
-                console.log("Switching to Atkinson");
-                setEffect('atkinson');
                 handled = true;
                 break;
             case 'p':
