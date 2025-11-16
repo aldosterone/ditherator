@@ -34,11 +34,11 @@
             --bg-primary: #1a1a1a;
             --bg-secondary: #2a2a2a;
             --bg-control: #333333;
-            --border-color: #444;
-            --border-light: #555;
-            --text-primary: #e0e0e0;
-            --text-secondary: #d0d0d0;
-            --text-muted: #999;
+            --border-color: #555;
+            --border-light: #666;
+            --text-primary: #ffffff;
+            --text-secondary: #e0e0e0;
+            --text-muted: #aaaaaa;
             --button-bg: #0d6efd;
             --button-hover: #0b5ed7;
             --button-active: #0a58ca;
@@ -63,15 +63,13 @@
             transition: background-color 0.3s, color 0.3s;
         }
         canvas {
-            border: 1px solid #ccc;
-            /* Remove fixed width - let JS handle sizing */
+            border: 1px solid var(--border-color);
             max-width: 90vw;
             max-height: 90vh;
             width: auto;
             height: auto;
-            background-color: #ffffff;
+            background-color: var(--bg-secondary);
             cursor: crosshair;
-            /* Critical: prevent CSS from distorting canvas */
             object-fit: contain;
         }
         canvas.compare-mode {
@@ -79,9 +77,9 @@
         }
         #controls, #slider-controls {
             padding: 10px;
-            background-color: #f0f0f0;
+            background-color: var(--bg-control);
             border-radius: 8px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--border-color);
             display: flex;
             flex-wrap: wrap;
             align-items: center;
@@ -93,9 +91,9 @@
             grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 12px;
             padding: 15px;
-            background-color: #f8f8f8;
+            background-color: var(--bg-secondary);
             border-radius: 8px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-light);
             max-width: 90vw;
         }
         
@@ -106,7 +104,7 @@
             border-radius: 8px;
             overflow: hidden;
             transition: all 0.2s ease;
-            background-color: white;
+            background-color: var(--thumb-bg);
             aspect-ratio: 1;
         }
         
@@ -271,18 +269,77 @@
         label {
             cursor: pointer;
             user-select: none;
+            color: var(--text-primary);
         }
         
         .help-text {
             margin-top: 10px;
             font-size: 12px;
-            color: #666;
+            color: var(--text-muted);
             text-align: center;
             max-width: 80vw;
+        }
+        
+        /* Header styles */
+        header {
+            width: 100%;
+            text-align: center;
+            padding: 20px 0 10px;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--button-bg) 0%, var(--button-hover) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
+        }
+        
+        header p {
+            margin: 5px 0 0;
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+        
+        /* Custom file input button */
+        #image-loader {
+            display: none;
+        }
+        
+        .file-input-label {
+            padding: 6px 10px;
+            font-size: 16px;
+            background-color: var(--button-bg);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: inline-block;
+        }
+        
+        .file-input-label:hover {
+            background-color: var(--button-hover);
+        }
+        
+        .file-input-label:active {
+            background-color: var(--button-active);
         }
 
         /* Mobile-first improvements */
         @media (max-width: 768px) {
+            header h1 {
+                font-size: 36px;
+            }
+            
+            header p {
+                font-size: 12px;
+            }
+            
             body {
                 padding: 10px;
                 gap: 10px;
@@ -318,6 +375,7 @@
             #controls select,
             #controls input[type="file"],
             #controls label,
+            .file-input-label,
             button {
                 font-size: 18px;
                 width: 100%;
@@ -325,6 +383,7 @@
             
             #controls select,
             #controls input[type="file"],
+            .file-input-label,
             button {
                 height: 44px;
                 padding: 10px;
@@ -379,17 +438,18 @@
                 flex-direction: column;
                 gap: 8px;
             }
-            
-            /* .pattern-swatch canvas {
-                width: 50px;
-                height: 50px;
-            } */
         }
     </style>
 </head>
 <body>
+    <header>
+        <h1>Ditherator</h1>
+        <p>WebGPU-Powered Image Dithering</p>
+    </header>
+    
     <div id="controls">
         <input type="file" id="image-loader" accept="image/*">
+        <label for="image-loader" class="file-input-label">Choose an image file</label>
         
         <button id="save-button">Save Image</button>
         
@@ -406,7 +466,7 @@
         <span id="runtime-display">Runtime: N/A</span>
     </div>
     
-    <div id="effect-thumbnails"></div>
+    <div id="effect-thumbnails" style="display: none;"></div>
     
     <div id="slider-controls" style="display: none;">
         <div id="bias-slider-group" class="slider-group">
