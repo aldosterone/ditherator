@@ -627,8 +627,8 @@ async function main() {
         { id: 'original', name: 'Original', needsSlider: false },
         { id: 'grayscale', name: 'Grayscale', needsSlider: false },
         { id: 'threshold', name: 'Threshold', needsSlider: 'threshold' },
-        { id: 'floydSteinberg', name: 'Floyd-Steinberg', needsSlider: 'brightness' },
-        { id: 'atkinson', name: 'Atkinson', needsSlider: 'brightness' },
+        { id: 'floydSteinberg', name: 'Floyd-Steinberg', needsSlider: false },
+        { id: 'atkinson', name: 'Atkinson', needsSlider: false },
         { id: 'bayer', name: 'Bayer', needsSlider: 'bayerSize' },
         { id: 'blueNoise', name: 'Blue Noise', needsSlider: 'bias' }
     ];
@@ -819,13 +819,10 @@ async function main() {
     const sliderControls = document.getElementById("slider-controls");
     const biasSliderGroup = document.getElementById("bias-slider-group");
     const thresholdSliderGroup = document.getElementById("threshold-slider-group");
-    const brightnessSliderGroup = document.getElementById("brightness-slider-group");
     const bayerSizeGroup = document.getElementById("bayer-size-group");
     // biasSlider and thresholdSlider already defined above when reading initial values
     const biasValue = document.getElementById("bias-value");
     const thresholdValue = document.getElementById("threshold-value");
-    const brightnessSlider = document.getElementById("brightness-slider");
-    const brightnessDisplayValue = document.getElementById("brightness-value");
     
     function setEffect(effectId) {
         currentEffect = effectId;
@@ -838,22 +835,21 @@ async function main() {
         const effect = effects.find(e => e.id === effectId);
         if (!effect) return;
         
+        // Always hide all slider groups first
+        if (biasSliderGroup) biasSliderGroup.style.display = "none";
+        if (thresholdSliderGroup) thresholdSliderGroup.style.display = "none";
+        if (bayerSizeGroup) bayerSizeGroup.style.display = "none";
+        
+        // Only show slider controls if the effect needs one
         if (effect.needsSlider && sliderControls) {
-            sliderControls.style.display = "block";
-            
-            if (biasSliderGroup) biasSliderGroup.style.display = "none";
-            if (thresholdSliderGroup) thresholdSliderGroup.style.display = "none";
-            if (brightnessSliderGroup) brightnessSliderGroup.style.display = "none";
-            if (bayerSizeGroup) bayerSizeGroup.style.display = "none";
+            sliderControls.style.display = "flex";
             
             if (effect.needsSlider === 'bias' && biasSliderGroup) {
-                biasSliderGroup.style.display = "block";
+                biasSliderGroup.style.display = "flex";
             } else if (effect.needsSlider === 'threshold' && thresholdSliderGroup) {
-                thresholdSliderGroup.style.display = "block";
-            } else if (effect.needsSlider === 'brightness' && brightnessSliderGroup) {
-                brightnessSliderGroup.style.display = "block";
+                thresholdSliderGroup.style.display = "flex";
             } else if (effect.needsSlider === 'bayerSize' && bayerSizeGroup) {
-                bayerSizeGroup.style.display = "block";
+                bayerSizeGroup.style.display = "flex";
             }
         } else if (sliderControls) {
             sliderControls.style.display = "none";
@@ -864,7 +860,13 @@ async function main() {
         const container = document.getElementById('effect-thumbnails');
         container.innerHTML = '';
         
-        if (!currentImageBitmap) return;
+        if (!currentImageBitmap) {
+            container.style.display = 'none';
+            return;
+        }
+        
+        // Show the container when we have an image
+        container.style.display = 'grid';
         
         const thumbSize = 150;
         const aspectRatio = currentImageBitmap.width / currentImageBitmap.height;
@@ -1059,15 +1061,6 @@ async function main() {
         });
     }
     
-    if (brightnessSlider && brightnessDisplayValue) {
-        brightnessSlider.addEventListener("input", (e) => {
-            const newValue = e.target.valueAsNumber;
-            brightnessDisplayValue.textContent = newValue.toFixed(2);
-            brightnessValueArray[0] = newValue;
-            needsRedraw = true;
-        });
-    }
-    
     if (perceptualCheckbox) {
         perceptualCheckbox.addEventListener("change", () => {
             perceptualValueArray[0] = perceptualCheckbox.checked ? 1 : 0;
@@ -1119,7 +1112,6 @@ async function main() {
             case '3':
                 console.log("Switching to Floyd-Steinberg");
                 setEffect('floydSteinberg');
-
                 handled = true;
                 break;
             case '4':
